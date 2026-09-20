@@ -15,7 +15,7 @@
 <!-- SUMMARY-START -->
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup, verification and decisions | 6 | 34 | 108 | 46 | 43% | in progress |
+| 0 | Setup, verification and decisions | 6 | 34 | 108 | 59 | 55% | in progress |
 | 1 | Data foundation | 7 | 33 | 96 | 39 | 41% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
@@ -24,7 +24,7 @@
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **617** | **96** | **16%** | |
+| | **Total** | **65** | **229** | **617** | **109** | **18%** | |
 
 Decisions (30 total): 6 open · 5 partly answered · 8 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -61,7 +61,7 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 |---|---|---|---|---|
 | D-01 | Hackathon rules: is pre-building allowed, is the theme fixed, what counts as "using" Nasiko? | 0.1.1 | partly answered | Owner, 2026-09-20: Nasiko is compulsory; Anakin and DronaHQ are not. Pre-building and theme still open. |
 | D-02 | Which city is the demo city (Pune is only an example in the architecture)? | 0.1.2 | partly answered | Owner, 2026-09-20: Bengaluru first; Mumbai only if time remains. Still to do: spot-check Bengaluru's OSM coverage and confirm. |
-| D-03 | Which LLM route and models? | 0.1.4, 0.3.6 | partly answered | Owner, 2026-09-20: Ollama as primary if possible, OpenRouter free as backup. Owner then said any Antraa or fairsynth model was fine. Finding: every `Antraa-*` and `fairsynth-*` model carries an unrelated baked-in system prompt and dataset (8,177 prompt tokens per request, which fills the 8,192 context), so I chose the clean `qwen2.5:7b-instruct` instead (7.6B, tool support, 59 prompt tokens, valid JSON, 10.1 s including load), plus `nomic-embed-text` for embeddings. **Owner to confirm this substitution.** Set in Nasiko's `.env`: `OPENAI_MODEL`, `ROUTER_MODEL`, `EMBEDDING_MODEL`. Still open: whether Nasiko can really use Ollama (its LLM Router natively supports openai, anthropic, gemini and openrouter only; the route goes through `OPENAI_BASE_URL` and is unverified) and the OpenRouter backup model. Machine: 23.7 GB RAM, RTX 3050 6 GB. |
+| D-03 | Which LLM route and models? | 0.1.4, 0.3.6 | partly answered | Owner, 2026-09-20: Ollama as primary if possible, OpenRouter free as backup. Owner then said any Antraa or fairsynth model was fine. Finding: every `Antraa-*` and `fairsynth-*` model carries an unrelated baked-in system prompt and dataset (8,177 prompt tokens per request, which fills the 8,192 context), so I chose the clean `qwen2.5:7b-instruct` instead (7.6B, tool support, 59 prompt tokens, valid JSON, 10.1 s including load), plus `nomic-embed-text` for embeddings. **Owner to confirm this substitution.** Set in Nasiko's `.env`: `OPENAI_MODEL`, `ROUTER_MODEL`, `EMBEDDING_MODEL`. Still open: whether Nasiko can really use Ollama (its LLM Router natively supports openai, anthropic, gemini and openrouter only; **verified 2026-09-20:** the route works when `OPENAI_API_BASE` (the router's setting) and `OPENAI_BASE_URL` (the routing engine's setting) both point at Ollama's OpenAI-compatible endpoint; a deployed agent answered through the proxy in 9.8 s and the routing engine dispatched in 6.8 s) and the OpenRouter backup model. Machine: 23.7 GB RAM, RTX 3050 6 GB. |
 | D-04 | Does the `orchestrator` live as a Nasiko agent or inside the backend? | 5.3.4 | open | |
 | D-05 | Database | 1.1.1 | answered | Owner, 2026-09-20: PostgreSQL + PostGIS in Docker. The separate test database is approved later at 4.9.1. |
 | D-06 | Population source: WorldPop or Census ward data (both free)? | 1.5.3 | answered | Owner, 2026-09-20: use OSM residential-building density plus land-use shares for F3 now; `cell_attributes.population_est` stays NULL until a population source is added later (no schema change needed). |
@@ -230,34 +230,34 @@ Every database action, with the approval reference. **No entries means the datab
 
 **0.3.4 Deploy through the dashboard (CLI optional)**
 - [x] Owner chose the dashboard for now; the CLI stays optional (D-26)
-- [ ] Dashboard upload flow for an agent reviewed
+- [x] Dashboard upload flow for an agent reviewed (used the same `POST /api/agents/upload` call the dashboard makes; the server builds the image, about 30 s)
 - [ ] Only if the CLI is wanted later: install Rust 1.85+ and `cargo install --path cli/` 🔒
 - [ ] Only if the CLI is wanted later: `nasiko connect http://localhost:8080` and `nasiko auth login`
 
 **0.3.5 Hello-world agent**
-- [ ] Start from a template in `D:\Projects\Nasiko\agents\` (or `nasiko new` if the CLI is installed)
-- [ ] Upload it through the dashboard
-- [ ] Chat with it in the dashboard and get an answer
-- [ ] Inspect the A2A Agent Card
-- [ ] Scripted `SendMessage` call through Nasiko's proxy
+- [x] Start from a template in `D:\Projects\Nasiko\agents\` (or `nasiko new` if the CLI is installed) (wrote `agents/hello_world/` on the template's pattern)
+- [x] Upload it through the dashboard (through the dashboard's upload API; agent is running)
+- [x] Chat with it in the dashboard and get an answer (through the A2A proxy; completed in 9.8 s with a sensible answer)
+- [x] Inspect the A2A Agent Card (the registry stores it and auto-generated the capability description)
+- [x] Scripted `SendMessage` call through Nasiko's proxy (`POST /api/agents/{id}` with header `A2A-Version: 1.0`)
 
 **0.3.6 LLM route**
 - [x] Confirmed from the source that an LLM config only validates the provider name (openai, anthropic, gemini, openrouter) and accepts any model string, so `openai` with `qwen2.5:7b-instruct` is allowed
 - [ ] `nasiko llm-config providers` reviewed (needs the CLI, or the equivalent API call)
 - [ ] OpenRouter free-model config created and attached to the hello-world agent
-- [ ] Agent LLM call works through the LLM Router
-- [ ] Ollama tested through an OpenAI-compatible base URL
-- [ ] Result recorded in D-03
+- [x] Agent LLM call works through the LLM Router (the agent answered through the router to local Ollama)
+- [x] Ollama tested through an OpenAI-compatible base URL (works via `OPENAI_API_BASE`; see the note added to D-03)
+- [x] Result recorded in D-03
 
 **0.3.7 Routing engine**
-- [ ] Note the chat model and embedding model the routing engine needs
-- [ ] Confirm a free option works for each
-- [ ] Try sample routing queries and note quality
+- [x] Note the chat model and embedding model the routing engine needs (`ROUTER_MODEL` and `EMBEDDING_MODEL`, set to `qwen2.5:7b-instruct` and `nomic-embed-text`)
+- [x] Confirm a free option works for each (routing dispatch through `POST /api/orchestrator/a2a` worked in 6.8 s)
+- [~] Try sample routing queries and note quality (only one agent is registered so far, so selection quality is untested)
 
 **0.3.8 Backend to Nasiko**
-- [ ] How our backend authenticates to Nasiko
+- [~] How our backend authenticates to Nasiko (login returns a bearer token for the user; a service account for the backend is still to decide)
 - [ ] Access-control and flow-guard defaults noted
-- [ ] How new agents appear in the routing engine
+- [x] How new agents appear in the routing engine (immediately after deploy, no restart needed)
 
 **0.3.9 Record findings**
 - [ ] Windows and Docker networking notes
@@ -277,7 +277,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 **0.4.3 Container reach**
 - [x] A container reaches Ollama on the host: a throwaway container gets HTTP 200 from `host.docker.internal:11434` even though Ollama listens only on 127.0.0.1
-- [ ] Repeat the check from a real agent container on the Nasiko network (needs the hello-world agent)
+- [x] Repeat the check from a real agent container on the Nasiko network (needs the hello-world agent) (the agent reached Ollama through the router)
 
 **0.4.4 OpenRouter backup**
 - [ ] Test the free model

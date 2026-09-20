@@ -1,0 +1,33 @@
+{
+  "protocolVersion": "0.2.9",
+  "name": "sitescout-hello",
+  "description": "Minimal SiteScout test agent. Answers a short question through the platform LLM router; used to verify that Nasiko, the router and the free local model work together.",
+  "url": "http://localhost:8000/",
+  "agentFramework": "a2a-sdk",
+  "preferredTransport": "JSONRPC",
+  "provider": {
+    "organization": "SiteScout",
+    "url": "http://localhost"
+  },
+  "version": "0.1.0",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "securitySchemes": {},
+  "security": [],
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "skills": [
+    {
+      "id": "hello",
+      "name": "Answer a short question",
+      "description": "Answers a short general question in one or two sentences using the platform LLM.",
+      "tags": ["test", "hello"],
+      "examples": ["What makes a good location for a pharmacy?"],
+      "inputModes": ["text/plain"],
+      "outputModes": ["text/plain"]
+    }
+  ]
+}
