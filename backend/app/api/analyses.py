@@ -160,7 +160,7 @@ def _stored_from_scores(
 def _run_in_background(request: Request, analysis_id: str, city_name: str) -> None:
     """Runs after the response is sent, with its own writable store."""
     with request.app.state.open_store(True) as store:
-        run_analysis(store, analysis_id, city_name=city_name)
+        run_analysis(store, analysis_id, city_name=city_name, scorer=request.app.state.scorer)
 
 
 # --- categories ------------------------------------------------------------------------------

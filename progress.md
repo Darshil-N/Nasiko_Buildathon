@@ -21,11 +21,11 @@
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 35 | 54% | in progress |
-| 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
+| 5 | Agents on Nasiko | 8 | 25 | 64 | 13 | 20% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 43 | 66% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 5 | 18% | in progress |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **326** | **54%** | |
+| | **Total** | **65** | **229** | **608** | **332** | **55%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -37,7 +37,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | Agent | Steps | State |
 |---|---|---|
 | **A** (this session) | Phase 0 except 0.5.4; 1.1, 1.2.1, 1.2.5, 1.3–1.6; 2.1.5, 2.2.3, 2.4, 2.5; 3.8; Phase 4 except 4.3 and 4.6.4; Phase 5; 8.2, 8.3, 8.5, 8.7 | working |
-| **B** (second session) | 0.5.4; 1.2.2–1.2.4; 1.7; 2.1.1–2.1.4, 2.2.1–2.2.2, 2.3; 3.1–3.7 (not 3.3.2, the 3.4.4 fallback, 3.7.3 or 3.6) and 3.9; 4.3 and 4.6.4; Phase 6; Phase 7; 8.1, 8.4, 8.6 | not started: waiting for the owner to open the session and point it at `handoff-agent-b.md` |
+| **B** (second session) | 0.5.4; 1.2.2–1.2.4; 1.7; 2.1.1–2.1.4, 2.2.1–2.2.2, 2.3; 3.1–3.7 (not 3.3.2, the 3.4.4 fallback, 3.7.3 or 3.6) and 3.9; 4.3 and 4.6.4; Phase 6; Phase 7; 8.1, 8.4, 8.6 | working: pointed at the remaining Phase 6 gaps (6.2.3 progress state, 6.4.2/6.4.3 map overlay, 6.6 UX states, 6.7.1 docs) |
 | Joint | 8.8 sign-off | later |
 
 **Handoffs** (requests between agents; the receiving agent updates the status):
@@ -58,6 +58,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 13 | A | B | Feature build is done on my side and ranks with your engine: `pipelines/build_features.py` builds `CellFeatures` for all 3 tiers per cell and category (I used your `affluence_index`, `tier_fit`, `gap_opportunity`, `accessibility`, `growth_momentum`, `residential_demand`, `pct` unchanged) and `ScoreEngine.rank` consumes them. Observations for you: (1) top scores are tightly clustered (about 80 to 83 for all 10 zones), so ranking resolution is low; percentile ranks saturate near 1.0 for several features, so please look at spreading the score. (2) `rank` returns single cells; zone merging and names (3.7.5) are still needed. (3) `scoring.features.confidence_score` still has the four-term formula; I use `pipelines.build_features.confidence_without_rent` (D-22c), please fold it into your library. (4) I stored per-category decay sums (`anchor_components`) so F1 can be recomputed with `answer_modifiers` at request time; a helper for that would be useful. | open |
 | 14 | A | B | The analysis API is committed (`93ebc1a`): `POST/GET /v1/analyses`, `/recommendations` (`?format=geojson`), `/zones/{rank}`, `/cells` (every scored cell with rank and score, for your heat map), `/compare`, `/what-if`, `GET /v1/categories` (tiers with labels and wizard questions) and `GET /v1/cities` now returns `{"cities": [...]}`. `GET /v1/analyses/{id}` returns status and, once done, the recommendations too. Create returns 202. Please build the wizard and Results tabs against these; shapes are in `backend/app/schemas/`. Notes for your library: (1) `ScoreEngine` keeps F8 at a neutral 0.5 when there is no rent data, but the approved D-22b says to drop F8 and rescale the other weights; please implement that. (2) The real cafe/mid ranking is Officers Colony 82.6, Corporation Quarters 82.0, SBI Colony 81.8: still tightly clustered (see row 13). (3) Analyses are not saved until the owner approves runtime writes, so end-to-end runs against the real database wait for that approval; the endpoints work today in tests. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
+| 15 | A | B | Rows 13 and 14 are resolved on my side: zone merging/naming (3.7.5) and narratives now run for real (`zone_names`, `make_narrative` in `backend/app/services/analysis_service.py`), and the score-clustering observation still holds (Officers Colony 82.6, Corporation Quarters 82.0, SBI Colony 81.8 for cafe/mid) but is no longer blocking — treat it as a tuning item for Phase 7, not a defect. The `sitescout-scoring` Nasiko agent is now deployed and live (`agents/scoring/`, wraps the same `score_zones` the backend uses locally) and the backend calls it for real when `USE_NASIKO_AGENTS=true` (falls back to local scoring automatically if the agent is down); verified end to end against the real database. `scripts/agent_packaging.py` gained a `data=` parameter (verbatim, non-`.py` files, e.g. category YAMLs) alongside the existing `shared=` (code-only) parameter — use `--data name=path` on `deploy_agent` for any agent that needs config files, not `--include`. | done |
 
 ---
 
@@ -998,9 +999,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [~] Go through Nasiko's LLM Router with the config from `nasiko llm-config` (works for the hello-world agent; per-agent `llm-config` not needed because the server defaults point at Ollama)
 
 **5.1.4 Network path**
-- [ ] Agent containers reach our PostGIS
-- [ ] Agent containers reach the backend where needed
-- [ ] Confirm Nasiko's own databases are not used or touched
+- [x] Agent containers reach our PostGIS (the `sitescout-scoring` agent reads `host.docker.internal:5433` READ ONLY; verified with a real scored analysis)
+- [x] Agent containers reach the backend where needed (the backend calls the agent through Nasiko's proxy; the agent does not call the backend back)
+- [x] Confirm Nasiko's own databases are not used or touched (the agent only opens `open_store_url` against `DATABASE_URL`, SiteScout's own database)
 
 ### Part 5.2: Data-side agents
 
@@ -1024,8 +1025,9 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.3: Analysis-side agents
 
 **5.3.1 `scoring`**
-- [ ] Rank, explain, what-if and compare endpoints
-- [ ] Tests
+- [x] Rank endpoint, with the explanation (contributions, drivers, risks, narrative) bundled in the same reply (`backend/app/services/scoring_agent.py`, wraps the same `score_zones` the backend uses locally)
+- [x] Tests (`backend/tests/test_scoring_agent.py`, `backend/tests/test_agent_gateway.py`)
+- [ ] What-if and compare stay backend-only for now (they operate on an already-stored analysis, not a fresh ranking call); revisit if the agent should own them too
 
 **5.3.2 `report-chat`**
 - [ ] Narrative generation
@@ -1048,18 +1050,18 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.4: Cards and containers
 
 **5.4.1 Agent Cards**
-- [~] A2A Agent Card for each agent (hello-world only so far)
+- [~] A2A Agent Card for each agent (hello-world and `sitescout-scoring` done; `geo-data`, `listings`, `market-intel`, `affluence`, `report-chat`, `orchestrator` still empty folders)
 - [ ] Skill descriptions checked against routing behaviour
 
 **5.4.2 Containers**
-- [~] Dockerfile per agent (hello-world only so far)
-- [ ] Compose file per agent
+- [~] Dockerfile per agent (hello-world and `sitescout-scoring` done)
+- [ ] Compose file per agent (not needed: agents are built and run by Nasiko itself, not by our compose file)
 - [ ] `sample_request.json` per agent
 
 ### Part 5.5: Deploy and routing
 
 **5.5.1 Deploy**
-- [~] Deploy each agent with the CLI or dashboard (hello-world done; repeatable command `python -m scripts.deploy_agent <agent>`)
+- [~] Deploy each agent with the CLI or dashboard (hello-world and `sitescout-scoring` done; repeatable command `python -m scripts.deploy_agent scoring --include agent_base=agents/_shared --include backend=backend --include shared=shared --include scoring=scoring --include pipelines=pipelines --data config=config`)
 - [x] Note whether the routing engine sees new agents immediately (yes, no restart needed)
 
 **5.5.2 Direct calls**
@@ -1081,6 +1083,7 @@ Every database action, with the approval reference. **No entries means the datab
 **5.6.1 Client**
 - [x] `nasiko_client` authenticates to Nasiko (`backend/app/services/nasiko_client.py`, tested)
 - [x] Sends A2A `SendMessage` calls (also the routing-engine call)
+- [x] `AgentGateway` / `NasikoScorer` (`backend/app/services/agent_gateway.py`) call the `sitescout-scoring` agent for a real analysis and fall back to local scoring (`ScorerUnavailableError`) if the agent is unreachable or answers something unusable; wired into `create_app` via `USE_NASIKO_AGENTS`, `NASIKO_USERNAME`, `NASIKO_PASSWORD`. Verified live: `POST /v1/analyses` for cafe/mid produced the same top zone (Officers Colony, 82.6) through the real agent call, logged as `scored an_66b9a05f on Nasiko agent sitescout-scoring v0.1.0 in 1893 ms`.
 
 **5.6.2 Run tracking** 🔒 G-DB
 - [ ] Write `agent_runs` rows

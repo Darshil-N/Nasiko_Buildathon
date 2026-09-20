@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:8501"  # comma-separated
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     nasiko_base_url: str = "http://localhost:8080"
+    nasiko_username: str | None = None
+    nasiko_password: SecretStr | None = None
+    # When true (and Nasiko credentials are set) the backend sends scoring to the Nasiko agent
+    # and falls back to scoring in-process if the agent cannot be reached.
+    use_nasiko_agents: bool = False
 
     @model_validator(mode="after")
     def _reject_placeholder_key_in_prod(self) -> Settings:

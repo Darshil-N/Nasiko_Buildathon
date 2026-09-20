@@ -60,7 +60,7 @@ def reject_outliers(df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, Any]
                 "index": idx,
                 "reason": "outlier",
                 "details": (
-                    f"Price {row['price_inr']} is outside 5 std devs " f"of median {row['median']}"
+                    f"Price {row['price_inr']} is outside 5 std devs of median {row['median']}"
                 ),
             }
         )

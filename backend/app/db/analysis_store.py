@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from typing import Any
 
@@ -305,10 +305,15 @@ class SqlAnalysisStore:
 
 
 @contextmanager
-def open_store(settings: Settings, *, write: bool) -> Iterator[SqlAnalysisStore]:
+def open_store_url(database_url: str, *, write: bool) -> Iterator[SqlAnalysisStore]:
     """A store over a fresh session: READ ONLY unless ``write`` is explicitly requested."""
-    engine = get_engine(settings.database_url)
+    engine = get_engine(database_url)
     if not write:
         engine = engine.execution_options(postgresql_readonly=True)
     with Session(engine) as session:
         yield SqlAnalysisStore(session)
+
+
+def open_store(settings: Settings, *, write: bool) -> AbstractContextManager[SqlAnalysisStore]:
+    """Like ``open_store_url`` with the app's configured database."""
+    return open_store_url(settings.database_url, write=write)

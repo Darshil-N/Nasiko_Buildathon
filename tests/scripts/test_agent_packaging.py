@@ -61,6 +61,16 @@ def test_shared_packages_are_copied_under_src(tmp_path: Path) -> None:
     assert "src/agent_base/notes.md" not in names(archive)
 
 
+def test_data_directories_are_copied_verbatim_under_src(tmp_path: Path) -> None:
+    agent = make_agent(tmp_path)
+    config = tmp_path / "config"
+    (config / "categories").mkdir(parents=True)
+    (config / "categories" / "cafe.yaml").write_text("weights: {}\n", encoding="utf-8")
+    archive = package_agent(agent, data={"config": config})
+    assert "src/config/categories/cafe.yaml" in names(archive)
+    assert "src/config/__init__.py" not in names(archive)  # not a code package
+
+
 def test_shared_name_clash_is_rejected(tmp_path: Path) -> None:
     agent = make_agent(tmp_path)
     (agent / "src" / "base").mkdir()
@@ -141,6 +151,12 @@ def test_deploy_without_smoke_does_not_send_a_message(tmp_path: Path) -> None:
     client = FakeClient()
     assert deploy("demo", client, agents_root=tmp_path, out=lambda s: None) is None  # type: ignore[arg-type]
     assert [c[0] for c in client.calls] == ["upload", "wait"]
+
+
+def test_data_directory_missing_is_rejected(tmp_path: Path) -> None:
+    agent = make_agent(tmp_path)
+    with pytest.raises(PackagingError, match="data directory"):
+        package_agent(agent, data={"config": tmp_path / "missing"})
 
 
 def test_parse_includes_and_env_file(tmp_path: Path) -> None:

@@ -287,48 +287,109 @@ def rank_changes(
     ]
 
 
+@dataclass(frozen=True)
+class ScoreResult:
+    """The top zones of one analysis, named and narrated, ready to store."""
+
+    zones: list[StoredZone]
+    config_version: str
+    notes: list[str] = field(default_factory=list)
+
+
+Scorer = Callable[[AnalysisRecord, str], ScoreResult]
+
+
+class ScorerUnavailableError(RuntimeError):
+    """A remote scorer (a Nasiko agent) cannot be used right now; score in this process instead."""
+
+
+def score_zones(
+    store: AnalysisStore,
+    *,
+    city_id: int,
+    city_name: str,
+    category: str,
+    tier: str,
+    answers: Mapping[str, Any],
+    constraints: Mapping[str, Any],
+    top_n: int,
+    config_loader: Callable[[str], CategoryConfig] = load_category_config,
+) -> ScoreResult:
+    """Load stored features, score every cell, and return the top ``top_n`` named zones.
+
+    This is the work of the Nasiko scoring agent; the backend runs the same function itself when
+    the agent is unavailable.
+    """
+    config = config_loader(category)
+    if tier not in config.tier_labels:
+        raise ValueError(f"tier {tier!r} is not offered for {category}")
+    bundles = store.tier_bundles(category, tier)
+    if not bundles:
+        raise LookupError(f"no stored features for {category}/{tier}")
+    meta = store.cell_meta(city_id)
+    outcome = score_analysis(bundles, meta, config, tier, answers, constraints)
+    zones = to_stored_zones(
+        outcome,
+        meta,
+        top_n=top_n,
+        city_name=city_name,
+        category=category,
+        tier_label=config.tier_labels[tier],
+    )
+    return ScoreResult(zones=zones, config_version=config.version, notes=outcome.notes)
+
+
 def run_analysis(
     store: AnalysisStore,
     analysis_id: str,
     *,
     city_name: str,
+    scorer: Scorer | None = None,
     config_loader: Callable[[str], CategoryConfig] = load_category_config,
 ) -> None:
-    """Run one queued analysis end to end and record the outcome. Never raises."""
+    """Run one queued analysis end to end and record the outcome. Never raises.
+
+    ``scorer`` decides where the scoring happens (for example on a Nasiko agent); by default it
+    runs in this process.
+    """
     record = store.load_analysis(analysis_id)
     if record is None:
         logger.error("analysis %s vanished before it could run", analysis_id)
         return
     store.set_status(analysis_id, "running")
+
+    def score_locally(rec: AnalysisRecord, name: str) -> ScoreResult:
+        return score_zones(
+            store,
+            city_id=rec.city_id,
+            city_name=name,
+            category=rec.category,
+            tier=rec.tier,
+            answers=rec.answers,
+            constraints=rec.constraints,
+            top_n=int(rec.constraints.get("top_n", DEFAULT_TOP_N)),
+            config_loader=config_loader,
+        )
+
     try:
-        config = config_loader(record.category)
-        bundles = store.tier_bundles(record.category, record.tier)
-        if not bundles:
-            raise LookupError(f"no stored features for {record.category}/{record.tier}")
-        meta = store.cell_meta(record.city_id)
-        outcome = score_analysis(
-            bundles, meta, config, record.tier, record.answers, record.constraints
-        )
-        top_n = int(record.constraints.get("top_n", DEFAULT_TOP_N))
-        zones = to_stored_zones(
-            outcome,
-            meta,
-            top_n=top_n,
-            city_name=city_name,
-            category=record.category,
-            tier_label=config.tier_labels.get(record.tier, record.tier),
-        )
-        if not zones:
+        try:
+            result = (scorer or score_locally)(record, city_name)
+        except ScorerUnavailableError:
+            logger.warning("analysis %s: remote scorer unavailable, scoring locally", analysis_id)
+            result = score_locally(record, city_name)
+        if not result.zones:
             store.set_status(
                 analysis_id,
                 "failed",
                 narrative="NO_CANDIDATES: no zone passes your constraints. Loosen them and retry.",
-                config_version=config.version,
+                config_version=result.config_version,
             )
             return
-        store.save_recommendations(analysis_id, zones)
-        summary = f"Top zone: {zones[0].zone_name} (score {zones[0].score:.0f})."
-        store.set_status(analysis_id, "done", narrative=summary, config_version=config.version)
+        store.save_recommendations(analysis_id, result.zones)
+        summary = f"Top zone: {result.zones[0].zone_name} (score {result.zones[0].score:.0f})."
+        store.set_status(
+            analysis_id, "done", narrative=summary, config_version=result.config_version
+        )
     except Exception:
         logger.exception("analysis %s failed", analysis_id)
         store.set_status(analysis_id, "failed", narrative=FAILURE_MESSAGE)

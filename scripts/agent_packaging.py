@@ -5,7 +5,12 @@ Layout of the zip (what Nasiko expects, and what each Dockerfile's ``COPY src/ /
     AgentCard.json
     Dockerfile
     src/...                 the agent's own code
-    src/<name>/...          optional shared packages copied in (for example ``agent_base``)
+    src/<name>/...          optional shared code packages copied in (for example ``agent_base``);
+                             only ``.py`` files are copied, and a package always gets an
+                             ``__init__.py``
+    src/<name>/...          optional data directories copied in verbatim (for example category
+                             config YAMLs), passed separately via ``data`` so a stray non-Python
+                             file in a code package is still caught as a mistake
 """
 
 from __future__ import annotations
@@ -52,8 +57,37 @@ def _files(root: Path) -> list[Path]:
     )
 
 
-def package_agent(agent_dir: Path, shared: Mapping[str, Path] | None = None) -> bytes:
-    """Build the zip for ``agent_dir``, copying each ``shared`` package into ``src/<name>/``.
+def _add_tree(
+    entries: dict[str, Path],
+    name: str,
+    source_dir: Path,
+    *,
+    only_py: bool,
+) -> None:
+    if not source_dir.is_dir():
+        kind = "shared package" if only_py else "data directory"
+        raise PackagingError(f"{kind} {name!r}: {source_dir} is not a directory")
+    for path in _files(source_dir):
+        if only_py and path.suffix != ".py":
+            continue
+        target = f"src/{name}/{path.relative_to(source_dir).as_posix()}"
+        if target in entries:
+            raise PackagingError(f"file name clash inside the zip: {target}")
+        entries[target] = path
+    if only_py:
+        entries.setdefault(f"src/{name}/__init__.py", _EMPTY)
+
+
+def package_agent(
+    agent_dir: Path,
+    shared: Mapping[str, Path] | None = None,
+    data: Mapping[str, Path] | None = None,
+) -> bytes:
+    """Build the zip for ``agent_dir``.
+
+    Each ``shared`` package is copied (``.py`` files only, plus a generated ``__init__.py``) into
+    ``src/<name>/``. Each ``data`` directory is copied verbatim (every file) into ``src/<name>/``,
+    for non-code assets a package needs at runtime, such as category config YAMLs.
 
     Raises:
         PackagingError: for a missing card, Dockerfile or ``src/``, or a file-name clash.
@@ -70,16 +104,9 @@ def package_agent(agent_dir: Path, shared: Mapping[str, Path] | None = None) -> 
     for path in _files(src):
         entries[f"src/{path.relative_to(src).as_posix()}"] = path
     for name, package_dir in (shared or {}).items():
-        if not package_dir.is_dir():
-            raise PackagingError(f"shared package {name!r}: {package_dir} is not a directory")
-        for path in _files(package_dir):
-            if path.suffix != ".py":
-                continue
-            target = f"src/{name}/{path.relative_to(package_dir).as_posix()}"
-            if target in entries:
-                raise PackagingError(f"file name clash inside the zip: {target}")
-            entries[target] = path
-        entries.setdefault(f"src/{name}/__init__.py", _EMPTY)
+        _add_tree(entries, name, package_dir, only_py=True)
+    for name, data_dir in (data or {}).items():
+        _add_tree(entries, name, data_dir, only_py=False)
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:

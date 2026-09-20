@@ -1,0 +1,35 @@
+{
+  "protocolVersion": "0.2.9",
+  "name": "sitescout-scoring",
+  "description": "Ranks candidate store locations (H3 cells) for a category and tier. Reads pre-computed area features from the SiteScout PostGIS database (read-only), applies the category's scoring weights, the user's questionnaire answers and hard constraints, and returns the top zones with a score breakdown, drivers, risks and a short summary. Send one JSON object: {city, category, tier, answers, constraints, top_n}.",
+  "url": "http://localhost:8000/",
+  "agentFramework": "a2a-sdk",
+  "preferredTransport": "JSONRPC",
+  "provider": {
+    "organization": "SiteScout",
+    "url": "http://localhost"
+  },
+  "version": "0.1.0",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "securitySchemes": {},
+  "security": [],
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "rank_zones",
+      "name": "Rank store locations",
+      "description": "Given a city, category (cafe, clothing, pharmacy), tier (budget, mid, premium), questionnaire answers and constraints, returns the best zones ranked by score with explanations.",
+      "tags": ["scoring", "site-selection", "ranking", "retail"],
+      "examples": [
+        "{\"city\": \"bengaluru\", \"category\": \"cafe\", \"tier\": \"mid\", \"answers\": {\"target_customer\": [\"students\"]}, \"constraints\": {}, \"top_n\": 5}"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    }
+  ]
+}

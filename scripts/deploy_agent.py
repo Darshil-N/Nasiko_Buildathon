@@ -1,7 +1,10 @@
 """Deploy one SiteScout agent to Nasiko and optionally smoke-test it.
 
     python -m scripts.deploy_agent hello_world --smoke "What makes a good pharmacy site?"
-    python -m scripts.deploy_agent scoring --include agent_base=agents/_shared
+    python -m scripts.deploy_agent scoring \
+        --include agent_base=agents/_shared --include backend=backend \
+        --include shared=shared --include scoring=scoring --include pipelines=pipelines \
+        --data config=config
 
 Credentials come from NASIKO_BASE_URL / NASIKO_USERNAME / NASIKO_PASSWORD, or (local dev only)
 from a Nasiko ``.env`` file via ``--nasiko-env-file``. Secrets are never printed.
@@ -59,6 +62,7 @@ def deploy(
     client: NasikoClient,
     *,
     shared: Mapping[str, Path] | None = None,
+    data: Mapping[str, Path] | None = None,
     smoke: str | None = None,
     agents_root: Path = AGENTS_ROOT,
     out: Callable[[str], None] = print,
@@ -66,7 +70,7 @@ def deploy(
     """Package, upload and build ``agent``; return the smoke-test reply if one was requested."""
     agent_dir = agents_root / agent
     card = load_card(agent_dir)
-    archive = package_agent(agent_dir, shared)
+    archive = package_agent(agent_dir, shared, data)
     out(f"packaged {agent} ({len(archive):,} bytes) as '{card['name']}' v{card['version']}")
     ticket = client.upload_agent(str(card["name"]), archive)
     out(f"uploaded; building (build {ticket.build_id})")
@@ -84,10 +88,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("agent", help="folder name under agents/, for example hello_world")
     parser.add_argument("--smoke", help="send this message after the build and print the reply")
     parser.add_argument("--include", action="append", default=[], metavar="NAME=PATH")
+    parser.add_argument(
+        "--data", action="append", default=[], metavar="NAME=PATH", help="non-code assets"
+    )
     parser.add_argument("--nasiko-env-file", type=Path, help="read admin credentials from it")
     args = parser.parse_args(argv)
     client = client_from_environment(args.nasiko_env_file)
-    reply = deploy(args.agent, client, shared=parse_includes(args.include), smoke=args.smoke)
+    reply = deploy(
+        args.agent,
+        client,
+        shared=parse_includes(args.include),
+        data=parse_includes(args.data),
+        smoke=args.smoke,
+    )
     return 0 if reply is None or reply.completed else 1
 
 

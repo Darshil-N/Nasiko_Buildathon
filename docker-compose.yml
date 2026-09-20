@@ -35,6 +35,9 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8501}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       NASIKO_BASE_URL: ${NASIKO_BASE_URL_IN_DOCKER:-http://host.docker.internal:8080}
+      NASIKO_USERNAME: ${NASIKO_USERNAME:-}
+      NASIKO_PASSWORD: ${NASIKO_PASSWORD:-}
+      USE_NASIKO_AGENTS: ${USE_NASIKO_AGENTS:-false}
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
