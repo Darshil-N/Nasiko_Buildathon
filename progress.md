@@ -15,7 +15,7 @@
 <!-- SUMMARY-START -->
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup, verification and decisions | 6 | 34 | 105 | 41 | 39% | in progress |
+| 0 | Setup, verification and decisions | 6 | 34 | 108 | 46 | 43% | in progress |
 | 1 | Data foundation | 7 | 33 | 98 | 1 | 1% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
@@ -24,7 +24,7 @@
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **616** | **42** | **7%** | |
+| | **Total** | **65** | **229** | **619** | **47** | **8%** | |
 
 Decisions (29 total): 7 open · 6 partly answered · 7 proposed (awaiting your confirmation) · 6 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -133,7 +133,6 @@ Every database action, with the approval reference. **No entries means the datab
 | Date | Blocker | Step | Waiting on |
 |---|---|---|---|
 | 2026-09-20 | No usable free LLM key yet: the OpenRouter key in the old env file is a placeholder, and the Ollama route through Nasiko is unverified | 0.3.6 | Owner: a real free OpenRouter key (optional) and the Ollama model id (D-03) |
-| 2026-09-20 | Ollama listens on the host only by default; containers may not reach it through `host.docker.internal` until it is exposed (to be tested, not yet known) | 0.4.3 | Agent A tests it next (Docker is running now) |
 
 ---
 
@@ -207,7 +206,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Generate and set the required secrets (encryption key, JWT secret, agent JWT secret, admin password)
 - [x] Point the LLM settings at Ollama; the paid OpenAI key was not copied
 - [x] Confirm `.env` is git-ignored and `docker compose config` reports no errors
-- [ ] Set `OPENAI_MODEL` to the chosen Ollama model id (D-03)
+- [x] Set `OPENAI_MODEL`, `ROUTER_MODEL` and `EMBEDDING_MODEL` to the chosen Ollama models (D-03)
+- [x] Add `OPENAI_API_BASE`, `DEFAULT_PROVIDER` and `DEFAULT_MODEL`: the LLM Router (agents' calls) reads those, not `OPENAI_BASE_URL`, and would otherwise keep calling `api.openai.com`; server container recreated and healthy
 - [ ] Owner supplies a real free OpenRouter key for the backup route (the old file only held a placeholder) 🔒
 
 **0.3.3 Start Nasiko**
@@ -215,7 +215,7 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] `docker compose up -d --build` in `D:\Projects\Nasiko`
 - [x] Containers healthy (7 running; postgres and redis report healthy)
 - [x] `http://localhost:8080` responds (health returns 200; the dashboard redirects to its login page)
-- [ ] Admin login works
+- [x] Admin login works (API login returns a token for the superuser and an authenticated `GET /api/agents` succeeds; the dashboard page itself was not opened in a browser)
 
 **0.3.4 Deploy through the dashboard (CLI optional)**
 - [x] Owner chose the dashboard for now; the CLI stays optional (D-26)
@@ -231,7 +231,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Scripted `SendMessage` call through Nasiko's proxy
 
 **0.3.6 LLM route**
-- [ ] `nasiko llm-config providers` reviewed
+- [x] Confirmed from the source that an LLM config only validates the provider name (openai, anthropic, gemini, openrouter) and accepts any model string, so `openai` with `qwen2.5:7b-instruct` is allowed
+- [ ] `nasiko llm-config providers` reviewed (needs the CLI, or the equivalent API call)
 - [ ] OpenRouter free-model config created and attached to the hello-world agent
 - [ ] Agent LLM call works through the LLM Router
 - [ ] Ollama tested through an OpenAI-compatible base URL
@@ -264,7 +265,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Test narrative-from-JSON
 
 **0.4.3 Container reach**
-- [ ] A container on the Nasiko agent network reaches Ollama on the host
+- [x] A container reaches Ollama on the host: a throwaway container gets HTTP 200 from `host.docker.internal:11434` even though Ollama listens only on 127.0.0.1
+- [ ] Repeat the check from a real agent container on the Nasiko network (needs the hello-world agent)
 
 **0.4.4 OpenRouter backup**
 - [ ] Test the free model
@@ -1401,6 +1403,7 @@ Every database action, with the approval reference. **No entries means the datab
 |---|---|---|
 | 2026-09-20 | `plan.md` and `progress.md` created from `architecture-1.md` (new files; no existing file modified). | Requested by owner |
 | 2026-09-20 | Plan 0.2 / progress rewritten for a free MVP: Anakin and DronaHQ removed, Nasiko kept, Streamlit, OSM plus optional CSV, Ollama with OpenRouter backup, PostGIS in Docker; new Part 1.7 (shared LLM client); Phases 2 and 6 rewritten; decisions D-20 to D-24 added. | Owner ("start editing the idea") |
+| 2026-09-20 | Nasiko `.env` extended with `OPENAI_API_BASE`, `DEFAULT_PROVIDER` and `DEFAULT_MODEL` (LLM Router now targets Ollama); server container recreated; admin login verified via API; container-to-Ollama reach verified. Only the `.env` file I created was changed in `D:\Projects\Nasiko`. | Owner (approved creating and starting Nasiko) |
 | 2026-09-20 | Plan 0.5: work split for two Claude agents (`plan.md` §9, handoff file `handoff-agent-b.md`); Docker Desktop and the Nasiko stack started (7 containers, server healthy); Ollama model chosen (`qwen2.5:7b-instruct`, embeddings `nomic-embed-text`) and set in Nasiko's `.env`; repo scaffolded (folders, `pyproject.toml`, requirements and lock file, `.gitignore`, `.env.example`, pre-commit, `scripts/update_progress_summary.py`); local `git init`; Bengaluru OSM coverage counts recorded; D-15 and D-28 answered, D-22 deferred, D-24 partly answered. `architecture-1.md` verified unchanged (size and timestamp). | Owner (answers to repo root, second Claude, `shared/`, niche, defer D-22, start Nasiko) |
 | 2026-09-20 | Plan 0.4: scope confirmed by the owner (Bengaluru first, Mumbai stretch as new Part 8.7 with sign-off moved to 8.8; all three categories; tiers lower class, medium class and niche; dashboard instead of CLI; Python 3.11.9). Created `D:\Projects\Nasiko\.env` (new file, generated secrets, Ollama route; the paid OpenAI key was not copied). Decisions D-28 and D-29 added; D-22 given a concrete proposal awaiting approval. | Owner ("create it yourself", answers 2–5) |
 | 2026-09-20 | Plan 0.3: read-only review of the installed Nasiko at `D:\Projects\Nasiko`; Phase 0 Part 0.3 and Phase 5 adapted to A2A v1.0, port 8080, LLM Router and routing engine; CLI allowed; decisions D-25 to D-27 added; blockers recorded. Nothing in `D:\Projects\Nasiko` was changed. | Owner (Nasiko already set up, CLI may be used) |
