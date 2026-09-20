@@ -1,0 +1,12 @@
+# Runtime dependencies shared by scoring/, shared/ and pipelines/.
+# Every entry is open source and free (plan.md, standard 10).
+# Backend, agents and the Streamlit app add their own files (backend.txt, frontend.txt) when their owners need them.
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+pyyaml>=6.0,<7
+numpy>=1.26,<3
+pandas>=2.2,<3
+h3>=4.0,<5
+shapely>=2.0,<3
+httpx>=0.27,<1
+tenacity>=8.3,<10

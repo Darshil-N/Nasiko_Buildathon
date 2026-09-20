@@ -1,0 +1,31 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Local data (snapshots and backtest cases ARE committed)
+data/raw/*
+!data/raw/.gitkeep
+data/exports/
+*.log
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Node (if a front-end toolchain is ever added)
+node_modules/

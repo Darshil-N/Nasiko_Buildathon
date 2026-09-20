@@ -1,0 +1,45 @@
+# Tooling configuration only. Dependencies live in requirements/*.txt.
+# Python 3.11+ (the installed interpreter; Nasiko itself runs in Docker and needs no Python).
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Markdown is excluded on purpose: ruff can rewrite Python code blocks inside .md files, and
+# architecture-1.md is the owner's file and must never be changed by a tool.
+extend-exclude = ["data", ".venv", "*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "C4", "RUF", "S", "PT", "T20"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"backend/tests/**" = ["S101"]
+"scripts/**" = ["T201"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["shared", "scoring", "backend", "pipelines"]
+explicit_package_bases = true
+mypy_path = "."
+
+[[tool.mypy.overrides]]
+module = ["h3.*", "shapely.*", "geopandas.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests", "backend/tests"]
+addopts = "-ra --strict-markers --strict-config --import-mode=importlib -m 'not integration'"
+markers = [
+    "integration: needs a real database, container or network; never run by default",
+]
+
+[tool.coverage.run]
+source = ["shared", "scoring", "backend", "pipelines"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
