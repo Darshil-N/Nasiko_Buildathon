@@ -48,8 +48,13 @@ class TestLLMClient:
     def test_provider_abstraction_with_router(
         self, mock_openai: MagicMock, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Step 1.7.1: inside agents, Nasiko's LLM Router is used."""
-        monkeypatch.setenv("LLM_ROUTER_URL", "http://fake-router/v1")
+        """Step 1.7.1: inside agents, Nasiko's LLM Router is used.
+
+        Nasiko injects OPENAI_BASE_URL / OPENAI_API_KEY / OPENAI_MODEL into agent containers
+        (see agents/hello_world/src/llm.py, verified against the real deployment), not
+        LLM_ROUTER_URL / LLM_ROUTER_KEY / ROUTER_MODEL.
+        """
+        monkeypatch.setenv("OPENAI_BASE_URL", "http://fake-router/v1")
 
         client = LLMClient(use_router=True)
         assert client.use_router is True

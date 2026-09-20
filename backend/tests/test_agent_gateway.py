@@ -76,6 +76,12 @@ class FakeNasiko:
             raise self.reply
         return self.reply
 
+    def route_message(self, text: str) -> A2AReply:
+        self.sent.append(json.loads(text))
+        if isinstance(self.reply, Exception):
+            raise self.reply
+        return self.reply
+
 
 def analysis_record() -> AnalysisRecord:
     return record(constraints={"top_n": 3, "monthly_rent_budget_inr": 50000})
@@ -127,6 +133,29 @@ def test_gateway_forgets_the_cached_id_after_a_failure() -> None:
         with pytest.raises(AgentCallError):
             gateway.call(SCORING_AGENT, {})
     assert nasiko.lookups == 2
+
+
+def test_route_returns_the_payload_from_whichever_agent_the_router_picked() -> None:
+    envelope = ok_envelope()
+    envelope["agent"] = "sitescout-report-chat"
+    nasiko = FakeNasiko(reply_for(envelope))
+    reply = AgentGateway(nasiko).route({"question": "why?"})
+    assert reply.agent == "sitescout-report-chat"
+    assert nasiko.sent == [{"question": "why?"}]
+
+
+@pytest.mark.parametrize(
+    "nasiko",
+    [
+        FakeNasiko(A2AReply(state="x", text="not json")),
+        FakeNasiko(reply_for({"agent": "a", "error": {"code": "INTERNAL", "message": "boom"}})),
+        FakeNasiko(reply_for({"agent": "a", "version": "1"})),
+        FakeNasiko(NasikoError("timed out")),
+    ],
+)
+def test_route_turns_every_failure_into_agent_call_error(nasiko: FakeNasiko) -> None:
+    with pytest.raises(AgentCallError):
+        AgentGateway(nasiko).route({})
 
 
 def test_nasiko_scorer_rebuilds_zones_from_the_payload() -> None:

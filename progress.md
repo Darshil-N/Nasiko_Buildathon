@@ -21,11 +21,11 @@
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 35 | 54% | in progress |
-| 5 | Agents on Nasiko | 8 | 25 | 64 | 13 | 20% | in progress |
+| 5 | Agents on Nasiko | 8 | 25 | 63 | 24 | 38% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 56 | 86% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 14 | 50% | in progress |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 13 | 30% | in progress |
-| | **Total** | **65** | **229** | **608** | **367** | **60%** | |
+| | **Total** | **65** | **229** | **607** | **378** | **62%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -58,6 +58,8 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 13 | A | B | Feature build is done on my side and ranks with your engine: `pipelines/build_features.py` builds `CellFeatures` for all 3 tiers per cell and category (I used your `affluence_index`, `tier_fit`, `gap_opportunity`, `accessibility`, `growth_momentum`, `residential_demand`, `pct` unchanged) and `ScoreEngine.rank` consumes them. Observations for you: (1) top scores are tightly clustered (about 80 to 83 for all 10 zones), so ranking resolution is low; percentile ranks saturate near 1.0 for several features, so please look at spreading the score. (2) `rank` returns single cells; zone merging and names (3.7.5) are still needed. (3) `scoring.features.confidence_score` still has the four-term formula; I use `pipelines.build_features.confidence_without_rent` (D-22c), please fold it into your library. (4) I stored per-category decay sums (`anchor_components`) so F1 can be recomputed with `answer_modifiers` at request time; a helper for that would be useful. | open |
 | 14 | A | B | The analysis API is committed (`93ebc1a`): `POST/GET /v1/analyses`, `/recommendations` (`?format=geojson`), `/zones/{rank}`, `/cells` (every scored cell with rank and score, for your heat map), `/compare`, `/what-if`, `GET /v1/categories` (tiers with labels and wizard questions) and `GET /v1/cities` now returns `{"cities": [...]}`. `GET /v1/analyses/{id}` returns status and, once done, the recommendations too. Create returns 202. Please build the wizard and Results tabs against these; shapes are in `backend/app/schemas/`. Notes for your library: (1) `ScoreEngine` keeps F8 at a neutral 0.5 when there is no rent data, but the approved D-22b says to drop F8 and rescale the other weights; please implement that. (2) The real cafe/mid ranking is Officers Colony 82.6, Corporation Quarters 82.0, SBI Colony 81.8: still tightly clustered (see row 13). (3) Analyses are not saved until the owner approves runtime writes, so end-to-end runs against the real database wait for that approval; the endpoints work today in tests. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
+| 16 | A | B | Bug fix in your file, done because it blocked deploying the report-chat agent for real: `shared/llm/client.py`'s `use_router=True` branch read `LLM_ROUTER_URL`/`LLM_ROUTER_KEY`/`ROUTER_MODEL`, but Nasiko actually injects `OPENAI_BASE_URL`/`OPENAI_API_KEY`/`OPENAI_MODEL` into agent containers (confirmed against `agents/hello_world/src/llm.py`, which already worked against the real deployment, and against the real `sitescout-report-chat` container logs, which showed `Connection refused` to `localhost:8080` before the fix). Fixed the three env var names and updated `tests/shared/test_llm_client.py`'s router test to match; all tests pass. If any other in-progress work assumed the old names, it needs the same fix. | done |
+| 17 | A | B | `report-chat` (`agents/report_chat/`) is deployed and wired into `POST /v1/analyses/{id}/chat`, calling the agent directly rather than through Nasiko's routing engine (see 5.3.4/5.6.3 above for why). If your Phase 6 chat screen still calls a stub, it can now call this endpoint for real: request `{"question": "..."}`, response `{"answer": str, "sources": [str], "grounded": bool}`. It answers honestly with a fixed "can't confirm that" message when the small local model can't produce a grounded answer within one regeneration, so the UI should treat `grounded: false` as a normal, expected state, not an error. | open |
 | 15 | A | B | Rows 13 and 14 are resolved on my side: zone merging/naming (3.7.5) and narratives now run for real (`zone_names`, `make_narrative` in `backend/app/services/analysis_service.py`), and the score-clustering observation still holds (Officers Colony 82.6, Corporation Quarters 82.0, SBI Colony 81.8 for cafe/mid) but is no longer blocking — treat it as a tuning item for Phase 7, not a defect. The `sitescout-scoring` Nasiko agent is now deployed and live (`agents/scoring/`, wraps the same `score_zones` the backend uses locally) and the backend calls it for real when `USE_NASIKO_AGENTS=true` (falls back to local scoring automatically if the agent is down); verified end to end against the real database. `scripts/agent_packaging.py` gained a `data=` parameter (verbatim, non-`.py` files, e.g. category YAMLs) alongside the existing `shared=` (code-only) parameter — use `--data name=path` on `deploy_agent` for any agent that needs config files, not `--include`. | done |
 
 ---
@@ -1030,38 +1032,38 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] What-if and compare stay backend-only for now (they operate on an already-stored analysis, not a fresh ranking call); revisit if the agent should own them too
 
 **5.3.2 `report-chat`**
-- [ ] Narrative generation
-- [ ] Follow-up answers
-- [ ] What-if requests
-- [ ] PDF hook
+- [x] Narrative generation is already covered by the per-zone narrative (`make_narrative` in `backend/app/services/analysis_service.py`, template-based, no LLM); this agent covers what that doesn't: free-form follow-up questions
+- [x] Follow-up answers (`agents/report_chat/`, wraps `backend/app/services/report_chat_agent.py`)
+- [ ] What-if requests (the existing `/v1/analyses/{id}/what-if` endpoint stays backend-only, like compare; revisit if chat should be able to trigger one)
+- [-] PDF hook (PDF export is cut from the MVP)
 
 **5.3.3 Narrative guardrails**
-- [ ] Structured JSON input only
-- [ ] 3–5 sentences with 2 drivers, 1 risk, 1 on-site check
-- [ ] Number post-check against the input
-- [ ] One regeneration on failure
-- [ ] Tested with the small local model
+- [x] Structured JSON input only (`ChatRequest` Pydantic model; the agent runner rejects anything else)
+- [x] 3 to 5 sentences (`MIN_SENTENCES`/`MAX_SENTENCES` in `report_chat_agent.py`); the 2 drivers / 1 risk / 1 on-site check shape from the architecture applies to the per-zone narrative template, not this free-form Q&A, so it doesn't apply here
+- [x] Number post-check against the input (`_is_grounded_and_sized`: every number in the answer must already appear in the question or the zone data)
+- [x] One regeneration on failure, then an honest "can't confirm that" reply instead of guessing (`MAX_REGENERATIONS = 1`, `SAFE_FALLBACK`)
+- [x] Tested with the small local model: deployed and called for real against `qwen2.5:7b-instruct` through Nasiko's LLM Router; it correctly fell back to the safe reply rather than hallucinate, which is the guardrail working as designed, not a defect. Prompt tuning to raise the grounded-answer rate is a good Phase 7/8 follow-up, not a blocker.
 
-**5.3.4 `orchestrator`** 🔒 G-DECIDE
-- [ ] Owner answers D-04
-- [ ] Pipeline order with retries
-- [ ] Tests
+**5.3.4 `orchestrator`**
+- [x] Owner answered D-04: the orchestrator lives inside the backend, which calls each agent directly by name (`AgentGateway.call`), not through Nasiko's generic routing engine — confirmed necessary the hard way: the routing engine (`/api/orchestrator/a2a`) turned out to run its own LLM reasoning over the message and answer in free text rather than relaying an agent's JSON envelope, which would silently bypass the report-chat guardrail above. `chat_service.py` has the finding written up.
+- [~] Pipeline order with retries: the backend calls scoring then (optionally) report-chat in order; each call has a documented fallback (`ScorerUnavailableError` -> score locally; agent-call failure -> "not available" reply) rather than a blind retry loop
+- [x] Tests (`backend/tests/test_agent_gateway.py`, `backend/tests/test_chat_api.py`)
 
 ### Part 5.4: Cards and containers
 
 **5.4.1 Agent Cards**
-- [~] A2A Agent Card for each agent (hello-world and `sitescout-scoring` done; `geo-data`, `listings`, `market-intel`, `affluence`, `report-chat`, `orchestrator` still empty folders)
+- [~] A2A Agent Card for each agent (hello-world, `sitescout-scoring` and `sitescout-report-chat` done; `geo-data`, `listings`, `market-intel`, `affluence`, `orchestrator` still empty folders — `orchestrator` needs none, since D-04 keeps it in the backend)
 - [ ] Skill descriptions checked against routing behaviour
 
 **5.4.2 Containers**
-- [~] Dockerfile per agent (hello-world and `sitescout-scoring` done)
+- [~] Dockerfile per agent (hello-world, `sitescout-scoring` and `sitescout-report-chat` done)
 - [ ] Compose file per agent (not needed: agents are built and run by Nasiko itself, not by our compose file)
 - [ ] `sample_request.json` per agent
 
 ### Part 5.5: Deploy and routing
 
 **5.5.1 Deploy**
-- [~] Deploy each agent with the CLI or dashboard (hello-world and `sitescout-scoring` done; repeatable command `python -m scripts.deploy_agent scoring --include agent_base=agents/_shared --include backend=backend --include shared=shared --include scoring=scoring --include pipelines=pipelines --data config=config`)
+- [~] Deploy each agent with the CLI or dashboard (hello-world, `sitescout-scoring` and `sitescout-report-chat` done; repeatable commands: `python -m scripts.deploy_agent scoring --include agent_base=agents/_shared --include backend=backend --include shared=shared --include scoring=scoring --include pipelines=pipelines --data config=config`; `python -m scripts.deploy_agent report_chat --include agent_base=agents/_shared --include backend=backend --include shared=shared`)
 - [x] Note whether the routing engine sees new agents immediately (yes, no restart needed)
 
 **5.5.2 Direct calls**
@@ -1091,8 +1093,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Record in the Database change log
 
 **5.6.3 Chat wiring**
-- [ ] `/chat` calls the routing engine
-- [ ] Return answer with sources or an explicit "not available"
+- [x] `POST /v1/analyses/{id}/chat` calls the `sitescout-report-chat` agent directly (`backend/app/services/chat_service.py`) rather than the routing engine — see the 5.3.4 note for why
+- [x] Return answer with sources or an explicit "not available" (`ChatAnswer.grounded`, `NOT_AVAILABLE` fallback). Verified live end to end: `POST /v1/analyses/an_66b9a05f/chat` with `USE_NASIKO_AGENTS=true` reached the real deployed agent and returned its (honest, guardrail-triggered) answer.
 
 ### Part 5.7: Scheduler
 

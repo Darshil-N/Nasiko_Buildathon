@@ -13,7 +13,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api import analyses, cities, health
+from backend.app.api import analyses, chat, cities, health
 from backend.app.core.errors import AppError, ErrorCode, error_response, register_error_handlers
 from backend.app.core.logging import configure_logging, request_id_var
 from backend.app.core.settings import API_VERSION, APP_VERSION, Settings, get_settings
@@ -34,8 +34,8 @@ def _clean_request_id(supplied: str | None) -> str:
     return uuid.uuid4().hex
 
 
-def build_scorer(settings: Settings) -> NasikoScorer | None:
-    """A scorer that uses the Nasiko scoring agent, or None to score in this process."""
+def build_agent_gateway(settings: Settings) -> AgentGateway | None:
+    """A gateway to Nasiko's agents, or None if agent calls are off or unconfigured."""
     password = settings.nasiko_password
     if not (settings.use_nasiko_agents and settings.nasiko_username and password):
         return None
@@ -45,7 +45,12 @@ def build_scorer(settings: Settings) -> NasikoScorer | None:
         password.get_secret_value(),
         timeout_s=SCORING_TIMEOUT_S,
     )
-    return NasikoScorer(AgentGateway(client))
+    return AgentGateway(client)
+
+
+def build_scorer(gateway: AgentGateway | None) -> NasikoScorer | None:
+    """A scorer that uses the Nasiko scoring agent, or None to score in this process."""
+    return NasikoScorer(gateway) if gateway is not None else None
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -62,7 +67,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     # Storage factory used by the analysis endpoints; tests replace it with an in-memory store.
     app.state.open_store = lambda write: open_store(settings, write=write)
-    app.state.scorer = build_scorer(settings)  # None means: score in this process
+    gateway = build_agent_gateway(settings)
+    app.state.scorer = build_scorer(gateway)  # None means: score in this process
+    app.state.agent_gateway = gateway  # None means: /chat answers "not available"
     register_error_handlers(app)
 
     @app.middleware("http")
@@ -104,4 +111,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router, prefix=prefix, tags=["meta"])
     app.include_router(cities.router, prefix=prefix, tags=["meta"])
     app.include_router(analyses.router, prefix=prefix, tags=["analyses"])
+    app.include_router(chat.router, prefix=prefix, tags=["analyses"])
     return app

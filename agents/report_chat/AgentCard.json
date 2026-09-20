@@ -1,0 +1,35 @@
+{
+  "protocolVersion": "0.2.9",
+  "name": "sitescout-report-chat",
+  "description": "Answers a follow-up question about an already-run SiteScout store-location analysis (why a zone ranks where it does, what a score breakdown means, what a risk implies). Every number in the answer is checked against the analysis data it was given; if it can't produce a grounded answer, it says so instead of guessing. Send one JSON object: {question, city, category, tier, zones}, where zones is the analysis's own top zones with their scores, contributions, drivers and risks.",
+  "url": "http://localhost:8000/",
+  "agentFramework": "a2a-sdk",
+  "preferredTransport": "JSONRPC",
+  "provider": {
+    "organization": "SiteScout",
+    "url": "http://localhost"
+  },
+  "version": "0.1.1",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "securitySchemes": {},
+  "security": [],
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "explain_analysis",
+      "name": "Explain a store-location analysis",
+      "description": "Given a question and the top zones of an already-scored analysis (scores, score breakdowns, drivers, risks and narratives), answers in 3 to 5 sentences using only the numbers it was given.",
+      "tags": ["chat", "explanation", "site-selection", "retail"],
+      "examples": [
+        "{\"question\": \"Why does Indiranagar rank first?\", \"city\": \"bengaluru\", \"category\": \"cafe\", \"tier\": \"mid\", \"zones\": [{\"rank\": 1, \"zone_name\": \"Indiranagar\", \"score\": 82.6, \"confidence\": 0.95, \"contributions\": {}, \"top_drivers\": [], \"top_risks\": [], \"narrative\": null}]}"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    }
+  ]
+}

@@ -46,6 +46,8 @@ class NasikoLike(Protocol):
         self, agent_id: str, text: str | None = None, data: dict[str, Any] | None = None
     ) -> A2AReply: ...
 
+    def route_message(self, text: str) -> A2AReply: ...
+
 
 @dataclass(frozen=True)
 class AgentReply:
@@ -112,6 +114,31 @@ class AgentGateway:
         """Drop a cached id so the next call looks the agent up again (it may have been rebuilt)."""
         with self._lock:
             self._ids.pop(name, None)
+
+    def route(self, request: Mapping[str, Any]) -> AgentReply:
+        """Ask Nasiko's routing engine to pick an agent for ``request`` (plan step 5.6.3)."""
+        try:
+            reply = self._client.route_message(json.dumps(request))
+        except NasikoError as exc:
+            raise AgentCallError(str(exc)) from exc
+        try:
+            envelope = json.loads(reply.text)
+        except json.JSONDecodeError as exc:
+            raise AgentCallError("the routed agent answered with text that is not JSON") from exc
+        if not isinstance(envelope, dict):
+            raise AgentCallError("the routed agent answered with an unexpected shape")
+        if "error" in envelope:
+            raise AgentCallError(f"the routed agent reported an error: {envelope['error']}")
+        payload = envelope.get("payload")
+        if not isinstance(payload, dict):
+            raise AgentCallError("the routed agent answered without a payload")
+        return AgentReply(
+            agent=str(envelope.get("agent", "unknown")),
+            version=str(envelope.get("version", "")),
+            latency_ms=int(envelope.get("latency_ms", 0)),
+            payload=payload,
+            warnings=[str(w) for w in envelope.get("warnings", [])],
+        )
 
 
 def scoring_request(record: AnalysisRecord) -> dict[str, Any]:

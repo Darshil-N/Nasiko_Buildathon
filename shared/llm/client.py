@@ -30,9 +30,12 @@ class LLMClient:
         self.use_router = use_router
 
         if use_router:
-            self.base_url = os.getenv("LLM_ROUTER_URL", "http://localhost:8080/v1")
-            self.api_key = os.getenv("LLM_ROUTER_KEY", "dummy")
-            self.model = os.getenv("ROUTER_MODEL", _DEFAULT_OLLAMA_MODEL)
+            # Nasiko deploys agents with OPENAI_BASE_URL pointing at its LLM Router and an
+            # OPENAI_API_KEY that is a short-lived identity token, not a real provider key (see
+            # agents/hello_world/src/llm.py, verified working against the real deployment).
+            self.base_url = os.getenv("OPENAI_BASE_URL", "http://localhost:8080/v1")
+            self.api_key = os.getenv("OPENAI_API_KEY", "dummy")
+            self.model = os.getenv("OPENAI_MODEL", _DEFAULT_OLLAMA_MODEL)
             self.client = OpenAI(base_url=self.base_url, api_key=self.api_key, timeout=timeout)
             self.backup_client = None
         else:
