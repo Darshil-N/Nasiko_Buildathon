@@ -1,0 +1,11 @@
+# City definition for ingestion (owner's first city, decision D-02).
+key: bengaluru
+name: Bengaluru
+state: Karnataka
+country: IN
+osm_relation_id: 7902476          # administrative boundary, about 716 square kilometres
+boundary_file: config/cities/bengaluru.geojson
+h3_resolution: 9                  # architecture section 4.3 (about 0.1 km2 per cell)
+fetch_buffer_m: 1500              # download this far beyond the boundary so edge cells still see nearby POIs
+tile_rows: 3                      # the download is split into rows x cols map tiles (Overpass limits)
+tile_cols: 3

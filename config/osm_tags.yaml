@@ -1,0 +1,83 @@
+# OSM tag mapping (architecture-1.md, Appendix A).
+#
+# Each internal category lists one or more selectors. A selector is "key=value" (exact match) or
+# "key" (the tag exists). An element belongs to a category if ANY of its selectors match.
+# Categories are checked in file order and the FIRST match wins, so specific categories
+# (coworking, boutique) come before general ones (office, clothes).
+#
+# `group` batches categories into one Overpass request per map tile.
+# `kind` is "poi" (a point of interest kept in the pois table), "area" (a polygon), "line" (a road)
+# or "place" (a named locality point). The last three only derive per-cell attributes and are
+# never stored as POIs.
+
+version: "2026-09-a"
+
+# Tags copied from OSM into pois.tags (everything else is dropped to keep rows small).
+keep_tags: [name, brand, operator, stars, opening_hours, cuisine, level, building, healthcare]
+
+categories:
+  # --- education ---
+  school:            {group: education, kind: poi, selectors: ["amenity=school"]}
+  college:           {group: education, kind: poi, selectors: ["amenity=college"]}
+  university:        {group: education, kind: poi, selectors: ["amenity=university"]}
+
+  # --- work ---
+  coworking:         {group: work, kind: poi, selectors: ["amenity=coworking_space", "office=coworking"]}
+  office:            {group: work, kind: poi, selectors: ["office"]}
+
+  # --- retail ---
+  mall:              {group: retail, kind: poi, selectors: ["shop=mall"]}
+  department_store:  {group: retail, kind: poi, selectors: ["shop=department_store"]}
+  supermarket:       {group: retail, kind: poi, selectors: ["shop=supermarket"]}
+  marketplace:       {group: retail, kind: poi, selectors: ["amenity=marketplace"]}
+  boutique:          {group: retail, kind: poi, selectors: ["shop=boutique"]}
+  clothes:           {group: retail, kind: poi, selectors: ["shop=clothes"]}
+  shoes:             {group: retail, kind: poi, selectors: ["shop=shoes"]}
+  jewelry:           {group: retail, kind: poi, selectors: ["shop=jewelry"]}
+  tailor:            {group: retail, kind: poi, selectors: ["craft=tailor"]}
+  car_showroom:      {group: retail, kind: poi, selectors: ["shop=car"]}
+
+  # --- health ---
+  hospital:          {group: health, kind: poi, selectors: ["amenity=hospital"]}
+  clinic:            {group: health, kind: poi, selectors: ["amenity=clinic"]}
+  doctors:           {group: health, kind: poi, selectors: ["amenity=doctors"]}
+  diagnostic_lab:    {group: health, kind: poi, selectors: ["healthcare=laboratory"]}
+  pharmacy:          {group: health, kind: poi, selectors: ["amenity=pharmacy"]}
+
+  # --- food ---
+  cafe:              {group: food, kind: poi, selectors: ["amenity=cafe"]}
+  restaurant:        {group: food, kind: poi, selectors: ["amenity=restaurant"]}
+
+  # --- finance ---
+  bank:              {group: finance, kind: poi, selectors: ["amenity=bank"]}
+  atm:               {group: finance, kind: poi, selectors: ["amenity=atm"]}
+
+  # --- transport ---
+  bus_stop:          {group: transport, kind: poi, selectors: ["highway=bus_stop"]}
+  rail_or_metro:     {group: transport, kind: poi, selectors: ["railway=station", "public_transport=station"]}
+  parking:           {group: transport, kind: poi, selectors: ["amenity=parking"]}
+
+  # --- civic and leisure ---
+  place_of_worship:  {group: leisure, kind: poi, selectors: ["amenity=place_of_worship"]}
+  cinema:            {group: leisure, kind: poi, selectors: ["amenity=cinema"]}
+  gym:               {group: leisure, kind: poi, selectors: ["leisure=fitness_centre"]}
+  park:              {group: leisure, kind: poi, selectors: ["leisure=park"]}
+  hotel:             {group: leisure, kind: poi, selectors: ["tourism=hotel"]}
+
+  # --- buildings (stored as points at the building centre) ---
+  residential_building: {group: buildings, kind: poi, selectors: ["building=apartments", "building=residential"]}
+
+  # --- land use polygons (attributes only) ---
+  landuse_residential: {group: landuse, kind: area, selectors: ["landuse=residential"]}
+  landuse_commercial:  {group: landuse, kind: area, selectors: ["landuse=commercial"]}
+  landuse_retail:      {group: landuse, kind: area, selectors: ["landuse=retail"]}
+
+  # --- main roads (lines; distance to the nearest main road feeds accessibility) ---
+  road_trunk:          {group: roads, kind: line, selectors: ["highway=trunk"]}
+  road_primary:        {group: roads, kind: line, selectors: ["highway=primary"]}
+  road_secondary:      {group: roads, kind: line, selectors: ["highway=secondary"]}
+
+  # --- named places (points; used to give every cell a locality name) ---
+  place_suburb:        {group: places, kind: place, selectors: ["place=suburb"]}
+  place_neighbourhood: {group: places, kind: place, selectors: ["place=neighbourhood"]}
+  place_quarter:       {group: places, kind: place, selectors: ["place=quarter"]}
