@@ -16,18 +16,18 @@
 <!-- SUMMARY-START -->
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup, verification and decisions | 6 | 34 | 108 | 61 | 56% | in progress |
+| 0 | Setup, verification and decisions | 6 | 34 | 108 | 64 | 59% | in progress |
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
-| 3 | Feature and scoring engine | 9 | 32 | 92 | 66 | 72% | in progress |
+| 3 | Feature and scoring engine | 9 | 32 | 92 | 69 | 75% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 18 | 28% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **229** | **38%** | |
+| | **Total** | **65** | **229** | **606** | **235** | **39%** | |
 
-Decisions (31 total): 5 partly answered · 7 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
+Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
 
 Refresh the table above with `python scripts/update_progress_summary.py` (from the repo root) after a batch of ticks.
@@ -55,6 +55,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 10 | A | B | For 3.8 (feature build) I propose this split: **you** provide one pure entry point, for example `scoring.build_cell_features(config, cells, catchments, attributes, ...) -> list[CellFeatures]`, doing the formulas and the city-wide percentile normalisation; **I** provide the inputs and the database I/O. Inputs I already have: `pipelines.catchments.iter_catchments(cells, pois, k=config.catchment_k, ...)` yields `(cell, list[POIRow with distance_m])` lazily, one cell at a time; `pipelines.city_dataset.build_dataset` gives cells, `CellAttributeRow` (land-use shares, main-road distance and class, locality, land use) and POIs. Because features are per (cell, category) and normalisation needs every cell, please make the entry point accept an iterator of cells but return the full list. Tell me if you prefer a different shape. | open |
 | 11 | A | B | Owner decisions that unblock you (details in the Decision Log): **D-22 approved**: implement the no-rent variants (affluence = 2/3 premium-POI density + 1/3 apartment share; drop F8 and rescale weights when there is no rent data; confidence = 2/3 POI coverage + 1/3 recency plus a visible note; rent filter only where rent data exists), and keep the original formulas for when a rent CSV exists. **D-19 answered**: no boosters are scored; provide day-part profile, age-skew proxy and medical density as explanatory info in the zone detail data, without changing the score or the weight tables (skip parking, late-night, seasonality). **D-23**: Streamlit has no login. **D-04**: the orchestrator lives in the backend (I will call the agents in order). | open |
 | 12 | A | B | More owner answers: **D-17**: please draft `config/brands_premium.yaml` per category (cafe, clothing, pharmacy) and tier (budget, mid, premium) for Bengaluru and put it in front of the owner for approval before it is used (also fix the placeholder that lists a pharmacy chain as premium). **Cuts**: PDF export is cut (skip 4.6.4 and the export screen 6.2.9) and Mumbai is cut. Growth signal (F9) and the compare-zones screen stay in. D-30 defaults are kept. | open |
+| 13 | A | B | Feature build is done on my side and ranks with your engine: `pipelines/build_features.py` builds `CellFeatures` for all 3 tiers per cell and category (I used your `affluence_index`, `tier_fit`, `gap_opportunity`, `accessibility`, `growth_momentum`, `residential_demand`, `pct` unchanged) and `ScoreEngine.rank` consumes them. Observations for you: (1) top scores are tightly clustered (about 80 to 83 for all 10 zones), so ranking resolution is low; percentile ranks saturate near 1.0 for several features, so please look at spreading the score. (2) `rank` returns single cells; zone merging and names (3.7.5) are still needed. (3) `scoring.features.confidence_score` still has the four-term formula; I use `pipelines.build_features.confidence_without_rent` (D-22c), please fold it into your library. (4) I stored per-category decay sums (`anchor_components`) so F1 can be recomputed with `answer_modifiers` at request time; a helper for that would be useful. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
 
 ---
@@ -96,6 +97,7 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 | D-29 | Bengaluru is large (roughly 700 km², about 7,000 cells). Start with tiled Overpass requests and fall back to a free Karnataka extract from Geofabrik if the public server is too slow? | 1.4.1 | proposed | Evidence from the 2026-09-20 check: counting features over a Bengaluru bounding box took 22 to 32 s per heavy tag, and three quick follow-up queries were rejected with HTTP 429. Tiling with slow pacing, or the extract, will be needed. Update: tiled, paced downloading with automatic tile splitting is built and running; the extract has not been needed so far. |
 | D-30 | Implementation choices I made for cell attributes; please review (all are easy to change): (a) a cell's `land_use` comes from land-use polygon shares (at least 0.25) or POI counts (at least 3 commercial POIs, or at least 3 residential buildings); both give `mixed`, neither gives `other`; (b) locality names come from the nearest OSM place point (suburb, neighbourhood, quarter) within 3 km, because most Bengaluru localities are mapped as points rather than polygons; (c) POIs just outside the boundary but inside the 1.5 km fetch buffer are kept with `h3_index` NULL, so edge cells still see nearby landmarks. | 1.3.3, 1.5.1 | answered | Owner, 2026-09-20: keep the defaults (land share of at least 25% or 3+ commercial POIs or residential buildings; localities from the nearest place point within 3 km). |
 | D-31 | How the backend logs in to Nasiko: the client uses a username and password. Proposed: a dedicated service user with the least rights Nasiko allows, instead of the admin account whose password is in Nasiko's `.env`. For local development the admin login is used. | 5.6.1 | proposed | |
+| D-32 | Heuristics I chose inside the feature build (all constants in `pipelines/build_features.py`, easy to change; review when convenient): (a) F3 residential demand = 0.6 x percentile of residential buildings in the catchment + 0.4 x percentile of the residential land-use share around the cell; (b) POI coverage: a cell zoned commercial or retail (25%+ of its area) is expected to have at least the 25th-percentile POI count within 500 m, otherwise its coverage drops; every other cell counts as fully covered; (c) road class scores: trunk and primary 1.0, secondary 0.7, none 0.3; transit, parking and coverage use a 500 m walking radius; (d) premium POIs = brands on the premium list, car showrooms and 4-5 star hotels; (e) a competitor's tier = the brand list, else the affluence of the cell it sits in, using the midpoints of the tier targets as cut-offs; (f) growth (F9) is neutral 0.5 and flagged as estimated until growth data exists; (g) confidence without rent data = 2/3 POI coverage + 1/3 recency (D-22c). | 3.8 | proposed | |
 
 ---
 
@@ -783,14 +785,14 @@ Every database action, with the approval reference. **No entries means the datab
 
 **3.8.1 Build pipeline** 🔒 G-DB
 - [x] Catchment generator `pipelines/catchments.py`: each cell's POIs within its k-ring with `distance_m` (lazy; k=2 for the whole city in 3.8 s, k=4 in 10.5 s)
-- [ ] `pipelines/build_features.py`
-- [ ] Dry-run mode
+- [x] `pipelines/build_features.py` (also `pipelines/catchment_sums.py`, `features_store.py`, `run_features.py`; all 3 categories for 6,631 cells build in about 5 s; numpy sums verified against B's `anchor_footfall`, `retail_cluster` and `competition_pressure`; B's `ScoreEngine` ranks the output)
+- [x] Dry-run mode (default; storing needs `--write` and approval)
 - [ ] Owner approves the write
 - [ ] Record in the Database change log
 
 **3.8.2 Versioning and freshness**
-- [ ] `feature_version` handling
-- [ ] Oldest source date per cell stored
+- [x] `feature_version` handling (version 1; stored per tier inside one JSON row per cell and category)
+- [~] Oldest source date per cell stored (recency comes from the oldest download; not stored per cell)
 
 ### Part 3.9: Tests and CLI
 
