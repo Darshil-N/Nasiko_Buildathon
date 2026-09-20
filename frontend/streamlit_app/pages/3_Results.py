@@ -10,50 +10,82 @@ from streamlit_folium import st_folium  # type: ignore[import-untyped]
 from frontend.streamlit_app.client import APIError, client
 
 st.set_page_config(
-    page_title="Results - SiteScout", layout="wide", initial_sidebar_state="collapsed"
+    page_title="Intelligence Dashboard | SiteScout",
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
     """
 <style>
+    .stApp {
+        background-color: #FAF8F5;
+        color: #2C2A29;
+    }
+    h1, h2, h3, h4 {
+        font-family: 'Georgia', serif;
+        color: #1A1A1A;
+        font-weight: normal;
+    }
     .metric-card {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
+        background-color: #FFFFFF;
+        padding: 2rem 1.5rem;
+        border-radius: 2px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        border: 1px solid #EAE6DF;
         text-align: center;
     }
     .metric-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #1a365d;
+        font-size: 2.5rem;
+        font-family: 'Georgia', serif;
+        color: #2C2A29;
+        margin-bottom: 0.5rem;
     }
     .metric-label {
-        font-size: 0.9rem;
-        color: #64748b;
+        font-size: 0.75rem;
+        color: #8C8273;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
     }
     .driver-pill {
         display: inline-block;
-        background-color: #f0fdf4;
-        color: #166534;
-        padding: 4px 12px;
-        border-radius: 9999px;
-        font-size: 0.8rem;
-        margin: 2px;
-        border: 1px solid #bbf7d0;
+        background-color: #F0F4F1;
+        color: #2F4F38;
+        padding: 6px 14px;
+        border-radius: 2px;
+        font-size: 0.75rem;
+        margin: 4px 4px 4px 0;
+        border: 1px solid #D6E0D9;
+        letter-spacing: 0.03em;
     }
     .risk-pill {
         display: inline-block;
-        background-color: #fef2f2;
-        color: #991b1b;
-        padding: 4px 12px;
-        border-radius: 9999px;
-        font-size: 0.8rem;
-        margin: 2px;
-        border: 1px solid #fecaca;
+        background-color: #FBF0F0;
+        color: #6B2C2C;
+        padding: 6px 14px;
+        border-radius: 2px;
+        font-size: 0.75rem;
+        margin: 4px 4px 4px 0;
+        border: 1px solid #EAD5D5;
+        letter-spacing: 0.03em;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 3rem;
+        white-space: pre-wrap;
+        background-color: transparent;
+        border-radius: 0;
+        color: #5C5855;
+        font-size: 1rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: transparent !important;
+        color: #1A1A1A;
+        border-bottom: 2px solid #2C2A29 !important;
     }
 </style>
 """,
@@ -61,8 +93,8 @@ st.markdown(
 )
 
 if "analysis_id" not in st.session_state:
-    st.warning("No active analysis. Please start a new one.")
-    if st.button("Go to New Analysis"):
+    st.warning("No active analysis. Please configure a new evaluation.")
+    if st.button("Configure Analysis"):
         st.switch_page("pages/2_New_Analysis.py")
     st.stop()
 
@@ -80,58 +112,61 @@ def poll_analysis(analysis_id: str) -> dict:
                 return resp
             elif status == "failed":
                 placeholder.empty()
-                st.error("❌ Analysis failed processing on the server.")
+                st.error("Analysis failed processing on the server.")
                 st.stop()
             else:
                 with placeholder.container():
-                    st.info(f"🔄 **Analysis in progress** (Status: `{status}`)... please wait.")
+                    st.info(
+                        f"Analysis in progress (Status: {status}). Please wait while the agents evaluate the data."
+                    )
                     st.progress(50)
                 time.sleep(2.0)
         except APIError as e:
             placeholder.empty()
             if e.code == "NO_CANDIDATES":
                 st.error(
-                    "⚠️ **No Zones Found:** No zones matched your strict constraints. Try relaxing your budget or size."
+                    "No Zones Found: No zones matched your strict constraints. Please relax your financial parameters."
                 )
             elif e.code == "CITY_NOT_READY":
-                st.error("⚠️ The selected city is not yet ready for analysis (CITY_NOT_READY).")
+                st.error("The selected city is not yet ready for analysis.")
             else:
-                st.error(f"❌ Failed to fetch analysis: {e.message}")
+                st.error(f"Failed to fetch analysis: {e.message}")
             if e.details and isinstance(e.details, str):
                 st.write(f"Details: {e.details}")
             st.stop()
         except Exception as e:
             placeholder.empty()
-            st.error(f"Unexpected error: {e}")
+            st.error(f"System Error: {e}")
             st.stop()
 
 
-# Fetch it
 resp = poll_analysis(analysis_id)
 recs = resp.get("recommendations", [])
 
-st.title("📍 AI Site Selection Results")
-st.markdown(f"**Analysis ID:** `{analysis_id}` | **Generated by:** SiteScout Autonomous Agents")
+st.title("Intelligence Dashboard")
+st.markdown(
+    f"<span style='color: #8C8273;'>Analysis Reference: {analysis_id}</span>",
+    unsafe_allow_html=True,
+)
+st.markdown("<br>", unsafe_allow_html=True)
 
-# 6.6 Edge cases display (caveats)
 data_notes = resp.get("data_notes", [])
 if data_notes:
-    with st.expander("⚠️ Data Caveats & Notices", expanded=True):
+    with st.expander("Data Integrity Notices", expanded=True):
         for note in data_notes:
             st.warning(note)
 
 if not recs:
-    st.warning("Analysis completed, but no recommendations were returned.")
+    st.warning("Evaluation completed, but no viable recommendations were returned.")
     st.stop()
 
-# --- TOP METRICS DASHBOARD ---
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 avg_conf = sum(r.get("confidence", 1.0) for r in recs) / len(recs)
 top_score = recs[0].get("score", 0)
 
 with col_m1:
     st.markdown(
-        f'<div class="metric-card"><div class="metric-value">{len(recs)}</div><div class="metric-label">Viable Zones</div></div>',
+        f'<div class="metric-card"><div class="metric-value">{len(recs)}</div><div class="metric-label">Viable Candidates</div></div>',
         unsafe_allow_html=True,
     )
 with col_m2:
@@ -145,28 +180,25 @@ with col_m3:
         unsafe_allow_html=True,
     )
 with col_m4:
-    # Just a placeholder for rent average or similar if we had it easily accessible
     st.markdown(
         '<div class="metric-card"><div class="metric-value">Active</div><div class="metric-label">Model Status</div></div>',
         unsafe_allow_html=True,
     )
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<br><br>", unsafe_allow_html=True)
 
 if avg_conf < 0.5:
-    st.warning("Low confidence warning: The data used for this analysis is sparse or outdated.")
+    st.warning(
+        "Data precision notice: Information density in this region is currently sparse. Estimations are applied."
+    )
 
-# --- MAIN LAYOUT ---
-tab_map, tab_leaderboard, tab_compare = st.tabs(
-    ["🗺️ Interactive Map", "🏆 Leaderboard", "⚖️ Compare Zones"]
-)
+tab_map, tab_leaderboard, tab_compare = st.tabs(["Interactive Map", "Leaderboard", "Compare Zones"])
 
 with tab_map:
     col_map, col_details = st.columns([7, 3])
 
     with col_map:
-        # Determine center from the first rec
-        center_lat, center_lon = 12.9716, 77.5946  # Default Bengaluru
+        center_lat, center_lon = 12.9716, 77.5946
         if recs:
             first_h3 = recs[0].get("h3_index")
             if first_h3:
@@ -204,72 +236,76 @@ with tab_map:
         folium.GeoJson(
             geojson_data,
             style_function=lambda f: {
-                "fillColor": "#16a34a"
+                "fillColor": "#3E5748"
                 if f["properties"]["score"] > 80
-                else "#eab308"
+                else "#B89C72"
                 if f["properties"]["score"] > 60
-                else "#ef4444",
-                "color": "#1e293b",
-                "weight": 1.5,
-                "fillOpacity": 0.6,
+                else "#8C8273",
+                "color": "#1A1A1A",
+                "weight": 1,
+                "fillOpacity": 0.7,
             },
-            highlight_function=lambda f: {"weight": 3, "fillOpacity": 0.9, "color": "white"},
+            highlight_function=lambda f: {"weight": 2, "fillOpacity": 0.9, "color": "#1A1A1A"},
             tooltip=folium.GeoJsonTooltip(
                 fields=["rank", "zone_name", "score"],
                 aliases=["Rank:", "Zone:", "Score:"],
-                style="font-family: Inter, sans-serif; font-size: 14px;",
+                style="font-family: 'Inter', sans-serif; font-size: 13px;",
             ),
         ).add_to(m)
 
-        st_data = st_folium(m, width="100%", height=650, returned_objects=["last_active_drawing"])
+        st_data = st_folium(m, width="100%", height=700, returned_objects=["last_active_drawing"])
 
     with col_details:
-        st.subheader("Deep Dive")
+        st.markdown("<h3 style='margin-top:0;'>Zone Analysis</h3>", unsafe_allow_html=True)
 
         selected_rank = None
         if st_data and st_data.get("last_active_drawing"):
             selected_rank = st_data["last_active_drawing"]["properties"]["rank"]
 
         if selected_rank:
-            # Find the full rec object
             rec = next((r for r in recs if r.get("rank") == selected_rank), None)
             if rec:
-                st.markdown(f"### #{rec['rank']} {rec['zone_name']}")
+                st.markdown(f"**Rank {rec['rank']} &mdash; {rec['zone_name']}**")
                 st.progress(rec["score"] / 100.0)
                 st.markdown(
-                    f"**Score:** `{rec['score']:.1f}/100` &nbsp;&nbsp;|&nbsp;&nbsp; **Confidence:** `{rec['confidence'] * 100:.0f}%`"
+                    f"<span style='color:#5C5855; font-size: 0.9rem;'>Score: {rec['score']:.1f}/100 | Confidence: {rec['confidence'] * 100:.0f}%</span>",
+                    unsafe_allow_html=True,
                 )
+                st.markdown("<br>", unsafe_allow_html=True)
 
-                st.markdown("#### Top Growth Drivers")
+                st.markdown("#### Growth Catalysts")
                 for driver in rec.get("top_drivers", []):
-                    st.markdown(
-                        f'<span class="driver-pill">✓ {driver}</span>', unsafe_allow_html=True
-                    )
+                    st.markdown(f'<div class="driver-pill">{driver}</div>', unsafe_allow_html=True)
 
-                st.markdown("#### Potential Risks")
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("#### Risk Factors")
                 for risk in rec.get("top_risks", []):
-                    st.markdown(f'<span class="risk-pill">⚠ {risk}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="risk-pill">{risk}</div>', unsafe_allow_html=True)
 
-                st.markdown("---")
+                st.markdown("<br><hr>", unsafe_allow_html=True)
                 if "narrative" in rec:
-                    st.markdown("**AI Analyst Narrative:**")
-                    st.info(rec["narrative"])
+                    st.markdown("#### Executive Summary")
+                    st.markdown(
+                        f"<div style='color: #2C2A29; line-height: 1.6; font-size: 0.95rem;'>{rec['narrative']}</div>",
+                        unsafe_allow_html=True,
+                    )
         else:
             st.info(
-                "👈 Click on any colored hexagon on the map to view a deep dive into the zone's demographics and risks."
+                "Select a designated zone on the map to review detailed demographics, catalysts, and risk factors."
             )
 
 with tab_leaderboard:
-    st.subheader("Top 10 Recommendations")
-    for i, r in enumerate(recs[:10]):
+    st.markdown("### Top Tier Recommendations")
+    for r in recs[:10]:
         with st.container():
-            st.markdown(f"**#{r['rank']} {r['zone_name']}** (Score: {r['score']:.1f})")
-            st.write(f"Drivers: {', '.join(r.get('top_drivers', []))}")
+            st.markdown(f"**{r['rank']}. {r['zone_name']}** &mdash; Score: {r['score']:.1f}")
+            st.markdown(
+                f"<span style='color: #8C8273; font-size: 0.9rem;'>Drivers: {', '.join(r.get('top_drivers', []))}</span>",
+                unsafe_allow_html=True,
+            )
             st.divider()
 
 with tab_compare:
-    st.info(
-        "Select multiple zones to compare them side-by-side. (Integration pending backend what-if endpoints)"
-    )
+    st.info("Comparison module pending integration with backend evaluation layers.")
 
-# ruff: noqa: E501, B007
+# ruff: noqa: E501
