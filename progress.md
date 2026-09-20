@@ -20,12 +20,12 @@
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
-| 4 | Backend API | 9 | 30 | 65 | 34 | 52% | in progress |
+| 4 | Backend API | 9 | 30 | 65 | 35 | 54% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 43 | 66% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 5 | 18% | in progress |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **325** | **54%** | |
+| | **Total** | **65** | **229** | **606** | **326** | **54%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -134,6 +134,7 @@ Record every approval the owner gives for gated actions.
 | 2026-09-20 | G-DECIDE | Keep the two leading blank lines in `architecture-1.md`: the owner made that edit by mistake and asked to keep it; committed as the owner's own change | rule 1 |
 | 2026-09-20 | G-DB | Load the Bengaluru dataset (1 city, 6,631 cells, 6,631 cell attributes, 41,469 POIs, 1 ingest job) in one transaction (owner: "Approve the load") | 1.3.1, 1.3.4, 1.4.5 |
 | 2026-09-20 | G-DB | Store the computed features (19,893 `cell_features` rows) and mark Bengaluru `ready` (owner: "Approve storing features and marking Bengaluru ready") | 3.8.1 |
+| 2026-09-20 | G-DB | Runtime app writes: the backend may insert and update rows in `users`, `analyses` and `recommendations` when an analysis is created and run (no schema change, no other tables; every read endpoint uses a READ ONLY session). Owner: "Approve (Recommended)". | 4.5.1 |
 | 2026-09-20 | G-DEVIATE | Adopt the no-rent-data formulas (D-22) as proposed; Anakin not integrated (decision delegated to Agent A: "take the decision") | D-22 |
 | 2026-09-20 | G-DECIDE | Boosters: none scored; day-part, age skew and medical density shown as information only | D-18, D-19 |
 | 2026-09-20 | G-DECIDE | Orchestrator inside the backend | D-04 |
@@ -153,6 +154,7 @@ Every database action, with the approval reference. **No entries means the datab
 | 2026-09-20 | Applied migration `0001_initial`: 13 SiteScout tables plus `alembic_version`, including the deviations D1–D5 listed at the top of the SQL file. | `backend/app/db/migrations/sql/0001_initial_upgrade.sql` | 2026-09-20 (same approval) | yes; verified read-only: 13 tables, PostGIS 3.4, SRID 4326 geometry columns, 26 CHECK constraints, 14 foreign keys, 30 indexes, all tables empty |
 | 2026-09-20 | Loaded the Bengaluru OSM dataset with `python -m pipelines.ingest_city load --write` (one transaction, upserts on natural keys): 1 city (status `ingesting`), 6,631 cells, 6,631 `cell_attributes`, 41,469 POIs, 1 `ingest_jobs` row. Nasiko's databases untouched. | `pipelines/db_load.py`, data in `data/raw/osm/bengaluru/latest/` | 2026-09-20 (owner: "Approve the load") | yes; verified read-only: counts match exactly, 0 invalid geometries, SRID 4326, 0 orphaned foreign keys, 3,155 buffer-zone POIs with NULL cell. A second run of the same load inside a transaction that was rolled back gave identical counts (idempotent) and persisted nothing |
 | 2026-09-20 | Stored the computed features with `python -m pipelines.run_features --write` (one transaction, upserts): 19,893 rows in `cell_features` (cafe, clothing and pharmacy x 6,631 cells; each row holds all three tiers and the per-category anchor sums) and set the Bengaluru city status to `ready`. No other table was touched. | `pipelines/features_store.py` | 2026-09-20 (owner: "Approve storing features and marking Bengaluru ready") | yes; verified read-only: 6,631 rows per category, table 27 MB, city `ready`, `GET /v1/cities` lists Bengaluru, and loading plus ranking one category and tier from the database takes about 0.6 s |
+| 2026-09-20 | Enabled runtime writes from the backend to `users`, `analyses`, `recommendations` (see the approval log); verified by one real end-to-end analysis, recorded below. | `backend/app/db/analysis_store.py` | 2026-09-20 | yes: one real run (cafe, mid, Bengaluru) created 1 user, 1 analysis (`an_de07ae37`) and 5 recommendations; compare, what-if, GeoJSON and history checked over HTTP |
 
 ## 5. Commit log (local only; nothing has been pushed)
 
@@ -883,7 +885,7 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Validate input
 - [x] Insert queued analysis
 - [x] Return id immediately
-- [ ] Owner approves first run against a real database
+- [x] Owner approves first run against a real database (approved and run 2026-09-20)
 
 **4.5.2 Pipeline runner**
 - [x] Load features
