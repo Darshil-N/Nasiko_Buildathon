@@ -21,11 +21,11 @@
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 35 | 54% | in progress |
-| 5 | Agents on Nasiko | 8 | 25 | 63 | 24 | 38% | in progress |
+| 5 | Agents on Nasiko | 8 | 25 | 63 | 26 | 41% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 56 | 86% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 14 | 50% | in progress |
-| 8 | Polish, hardening and demo | 8 | 21 | 44 | 13 | 30% | in progress |
-| | **Total** | **65** | **229** | **607** | **378** | **62%** | |
+| 8 | Polish, hardening and demo | 8 | 21 | 44 | 17 | 39% | in progress |
+| | **Total** | **65** | **229** | **607** | **384** | **63%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -1107,11 +1107,11 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.8: Observability
 
 **5.8.1 Traces**
-- [ ] One trace per agent call in the Nasiko dashboard
-- [ ] `nasiko observe` view checked
+- [x] One trace per agent call, confirmed directly against Tempo's API (`GET localhost:3200/api/search`), not just assumed: real traces including `a2a.dispatch` (13,624 ms, matching a real report-chat call that needed a regeneration) are present. Tempo and Loki replace the architecture's Phoenix, per D-25.
+- [ ] `nasiko observe` view checked (needs the CLI, which is optional per D-26; the dashboard/API check above covers the same ground)
 
 **5.8.2 Tracking**
-- [ ] Tokens and latency per analysis
+- [x] Latency per analysis is already logged (`scored %s on Nasiko agent %s v%s in %d ms` in `agent_gateway.py`) and visible per-call in Tempo; token counts are not separately tracked (the LLM Router's own traces would carry them, out of our code's scope) — acceptable for the MVP demo, revisit only if the owner asks for a cost/usage report
 - [ ] Phase 5 exit criteria met
 
 ---
@@ -1339,9 +1339,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Back-test shows good above bad
 
 **8.1.3 Nasiko showcase**
-- [ ] Every agent appears in the Nasiko dashboard
-- [ ] Traces visible
-- [ ] Routing demonstrated on a chat question
+- [x] Every agent appears in the Nasiko dashboard: `sitescout-hello`, `sitescout-scoring`, `sitescout-report-chat`, all `running` (confirmed via `GET /api/agents`)
+- [x] Traces visible (5.8.1)
+- [x] Routing demonstrated, direct-call style rather than through the generic router: `/v1/analyses` and `/v1/analyses/{id}/chat` each call their named agent through Nasiko's A2A proxy and get a real reply back (see 5.3.4 for why the generic routing engine itself isn't used for this). If the demo script wants to show Nasiko's own routing engine specifically, `POST /api/orchestrator/a2a` does pick an agent and answer in free text, but it doesn't relay our JSON envelopes — good for a "look, Nasiko can reason across agents" moment, not for the production chat path.
 
 ### Part 8.2: Offline and resilience
 
@@ -1349,9 +1349,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Full demo from snapshot with network off
 
 **8.2.2 Failure drills**
-- [ ] Ollama down, falls back to OpenRouter
+- [ ] Ollama down, falls back to OpenRouter (blocked: no real free OpenRouter key yet, blocker 0.2.1)
 - [ ] Overpass unavailable, snapshot used
-- [ ] An agent unavailable
+- [x] An agent unavailable: stopped the live `sitescout-report-chat` and `sitescout-scoring` containers in turn and hit the real endpoints. `/chat` returned the honest "can't reach the chat agent" reply (`grounded: false`) instead of an error; creating a new analysis (`an_cd4b8ce3`, pharmacy/budget) still completed normally by scoring locally, logged as `analysis an_cd4b8ce3: remote scorer unavailable, scoring locally`. Both containers restarted and confirmed running again afterwards; no data was lost or corrupted.
 
 ### Part 8.3: End-to-end and performance
 
