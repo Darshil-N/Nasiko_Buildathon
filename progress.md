@@ -15,16 +15,16 @@
 <!-- SUMMARY-START -->
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup, verification and decisions | 6 | 34 | 108 | 59 | 55% | in progress |
-| 1 | Data foundation | 7 | 33 | 96 | 48 | 50% | in progress |
+| 0 | Setup, verification and decisions | 6 | 34 | 108 | 61 | 56% | in progress |
+| 1 | Data foundation | 7 | 33 | 96 | 67 | 70% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
-| 3 | Feature and scoring engine | 9 | 32 | 91 | 65 | 71% | in progress |
+| 3 | Feature and scoring engine | 9 | 32 | 92 | 66 | 72% | in progress |
 | 4 | Backend API | 9 | 30 | 67 | 14 | 21% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **617** | **193** | **31%** | |
+| | **Total** | **65** | **229** | **618** | **215** | **35%** | |
 
 Decisions (31 total): 6 open · 5 partly answered · 9 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -126,7 +126,7 @@ Record every approval the owner gives for gated actions.
 | 2026-09-20 | G-DEVIATE | Schema deviations D1–D5 from the architecture DDL (cities.key, ingest_jobs instead of scrape_jobs, new cell_attributes, cell_features.category, CHECK constraints), approved together with the migration | D-24 |
 | 2026-09-20 | G-DECIDE | Use OSM residential-building density plus land-use shares for F3 now; population stays NULL until later | D-06 |
 | 2026-09-20 | G-DECIDE | Keep the two leading blank lines in `architecture-1.md`: the owner made that edit by mistake and asked to keep it; committed as the owner's own change | rule 1 |
-| 2026-09-20 | not yet approved | Loading data (city, cells, POIs, attributes) into the new tables: each load will be shown and approved separately | 1.3.1, 1.3.4, 1.4.5 |
+| 2026-09-20 | G-DB | Load the Bengaluru dataset (1 city, 6,631 cells, 6,631 cell attributes, 41,469 POIs, 1 ingest job) in one transaction (owner: "Approve the load") | 1.3.1, 1.3.4, 1.4.5 |
 
 ## 4. Database change log (G-DB)
 
@@ -136,6 +136,7 @@ Every database action, with the approval reference. **No entries means the datab
 |---|---|---|---|---|
 | 2026-09-20 | Started a NEW, empty PostGIS container `sitescout-db` (`postgis/postgis:16-3.4`, bound to `127.0.0.1:5433`, volume `sitescout_pgdata`) with `docker compose up -d db`. Nasiko's own databases were not touched. | `docker-compose.yml` | 2026-09-20 (owner: "Approve container + migration as written") | yes; healthy in about 9 s |
 | 2026-09-20 | Applied migration `0001_initial`: 13 SiteScout tables plus `alembic_version`, including the deviations D1–D5 listed at the top of the SQL file. | `backend/app/db/migrations/sql/0001_initial_upgrade.sql` | 2026-09-20 (same approval) | yes; verified read-only: 13 tables, PostGIS 3.4, SRID 4326 geometry columns, 26 CHECK constraints, 14 foreign keys, 30 indexes, all tables empty |
+| 2026-09-20 | Loaded the Bengaluru OSM dataset with `python -m pipelines.ingest_city load --write` (one transaction, upserts on natural keys): 1 city (status `ingesting`), 6,631 cells, 6,631 `cell_attributes`, 41,469 POIs, 1 `ingest_jobs` row. Nasiko's databases untouched. | `pipelines/db_load.py`, data in `data/raw/osm/bengaluru/latest/` | 2026-09-20 (owner: "Approve the load") | yes; verified read-only: counts match exactly, 0 invalid geometries, SRID 4326, 0 orphaned foreign keys, 3,155 buffer-zone POIs with NULL cell. A second run of the same load inside a transaction that was rolled back gave identical counts (idempotent) and persisted nothing |
 
 ## 5. Commit log (local only; nothing has been pushed)
 
@@ -165,7 +166,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 **0.1.2 Choose the demo city**
 - [x] Owner chose Bengaluru first, Mumbai only if time remains (D-02)
-- [ ] Spot-check Bengaluru's OSM coverage (markets, colleges, hospitals present)
+- [x] Spot-check Bengaluru's OSM coverage (markets, colleges, hospitals present) - confirmed by the full download: 64 marketplaces, 593 colleges, 1,125 hospitals, 3,060 offices
 - [ ] Owner confirms Bengaluru after the spot-check
 
 **0.1.3 Choose the first category**
@@ -295,7 +296,7 @@ Every database action, with the approval reference. **No entries means the datab
 **0.5.1 Overpass**
 - [x] Overpass responds for Bengaluru
 - [x] Spot-check coverage: counts over an approximate Greater Bengaluru bounding box are cafes 1,154, restaurants 3,276, marketplaces 63, colleges 576, universities 38, hospitals 1,113, clinics 1,017, schools 1,675, offices 3,183, bus stops 3,311 and apartment buildings 8,984 (plausible; not yet compared with places the owner knows)
-- [ ] Retry the pharmacy, clothes-shop and mall counts (they were rejected with HTTP 429; pace requests slower)
+- [x] Retry the pharmacy, clothes-shop and mall counts (they were rejected with HTTP 429; pace requests slower) - superseded by the full download: 998 pharmacies, 1,488 clothes shops, 77 malls
 
 **0.5.2 Population source**
 - [ ] Dataset downloadable for the city
@@ -415,21 +416,21 @@ Every database action, with the approval reference. **No entries means the datab
 **1.3.1 City record and boundary**
 - [x] Obtain the city boundary polygon (OSM relation 7902476, 719 km²; saved in `config/cities/`)
 - [x] Compute bbox
-- [ ] Owner approves the city insert 🔒 G-DB
+- [x] Owner approves the city insert 🔒 G-DB - approved and loaded
 
 **1.3.2 Generate cells**
 - [x] Polyfill H3 res 9 over the boundary (6,631 cells)
 - [x] Verify cell count is plausible for the city area (0.108 km² per cell)
 
 **1.3.3 Locality names**
-- [~] Fetch OSM place data (mostly points rather than polygons, see D-30; download running)
-- [~] Assign `locality_name` to each cell (code and tests done; real run waits for the download)
-- [~] Report cells with no locality (part of the QA report)
+- [x] Fetch OSM place data (mostly points rather than polygons, see D-30; download running) - done: 1,251 place elements
+- [x] Assign `locality_name` to each cell (code and tests done; real run waits for the download) - real run: 6,630 of 6,631 cells named, 1,024 distinct localities
+- [x] Report cells with no locality (part of the QA report) - one cell has none
 
 **1.3.4 Persist cells** 🔒 G-DB
-- [ ] Store centroid and boundary
-- [ ] Owner approves the write
-- [ ] Record in the Database change log
+- [x] Store centroid and boundary - 6,631 cells loaded
+- [x] Owner approves the write
+- [x] Record in the Database change log
 
 ### Part 1.4: OSM POI ingestion
 
@@ -458,8 +459,8 @@ Every database action, with the approval reference. **No entries means the datab
 
 **1.4.5 Persist POIs** 🔒 G-DB
 - [x] Upsert with natural keys (loader written and tested with a fake connection; `load` is a dry run unless `--write`)
-- [ ] Owner approves the write
-- [ ] Record in the Database change log
+- [x] Owner approves the write
+- [x] Record in the Database change log
 
 **1.4.6 Coverage check**
 - [ ] Per-area POI density check
@@ -469,36 +470,36 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 1.5: Land use, buildings, population and roads
 
 **1.5.1 Land use**
-- [~] Fetch OSM landuse polygons (download running)
-- [~] Classify each cell (residential, commercial, mixed, other): code and tests done, rule in D-30
+- [x] Fetch OSM landuse polygons (download running) - done: 12,144 elements
+- [x] Classify each cell (residential, commercial, mixed, other): code and tests done, rule in D-30 - real run: 1,512 residential, 686 commercial, 594 mixed, 3,839 other
 
 **1.5.2 Residential density**
-- [~] Count residential buildings per cell (stored as `residential_building` POIs; counts feed the land-use class)
+- [x] Count residential buildings per cell (stored as `residential_building` POIs; counts feed the land-use class) - 11,947 residential-building POIs downloaded
 - [ ] Compute apartment share (from the POIs' `building` tag in the feature stage)
 
 **1.5.3 Population** 🔒 G-DECIDE
 - [x] Owner answers D-06: OSM building density and land-use shares are used for the MVP; no population download is needed and `population_est` stays NULL
 
 **1.5.4 Road and transit attributes**
-- [~] Road class and main-road distance (code and tests done; needs the roads download)
-- [~] Transit stops within walking distance (bus stops and stations are downloaded as POIs)
-- [~] Parking presence (parking is downloaded as POIs)
+- [x] Road class and main-road distance (code and tests done; needs the roads download) - real run: all 6,631 cells have a main road
+- [x] Transit stops within walking distance (bus stops and stations are downloaded as POIs) - 3,427 bus stops and 148 stations downloaded
+- [x] Parking presence (parking is downloaded as POIs) - 1,466 parking POIs downloaded
 
 ### Part 1.6: Geo-data pipeline and QA
 
 **1.6.1 Ingestion pipeline**
-- [~] `pipelines/ingest_city.py` runs steps 1–3 of §4.4 (`fetch`, `grid`, `build`, `load` exist; the full real run waits for the download)
+- [x] `pipelines/ingest_city.py` runs steps 1–3 of §4.4 (`fetch`, `grid`, `build`, `load` exist; the full real run waits for the download) - verified on the full real download
 - [x] Clear logging and exit codes
 - [x] Dry-run mode that writes nothing (`load` without `--write`)
 
 **1.6.2 Idempotency**
-- [ ] Two runs give identical counts
-- [ ] Test added
+- [x] Two runs give identical counts (checked in a rolled-back transaction: identical counts, nothing persisted)
+- [ ] Test added (needs the test database from 4.9.1; the check ran as a one-off script)
 
 **1.6.3 QA report**
-- [~] Counts per category and per cell (QA report written to `data/raw/osm/<city>/qa_report.json`; real run pending)
+- [x] Counts per category and per cell (QA report written to `data/raw/osm/<city>/qa_report.json`; real run pending) - real QA report produced
 - [ ] Spot check with the owner's known areas
-- [ ] Gaps recorded
+- [x] Gaps recorded - 2,027 cells (31%) have no POI, 3,155 POIs lie only in the 1.5 km buffer, and 1 cell has no locality
 
 **1.6.4 Tests**
 - [x] Fixture Overpass responses (mocked transports)
