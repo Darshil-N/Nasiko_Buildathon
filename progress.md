@@ -47,7 +47,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 1 | A | B | Scaffold, `.venv`, tool configs and local git are ready. Start with `shared/contracts.py` (cells, POIs, listings, market signals, `CellFeatures`) and tell A when it is ready, because A's database loaders and feature pipeline must produce exactly those shapes. | done |
 | 2 | A | B | Config loader (`shared/config.py`) and category YAMLs are needed by A for `/categories` and ingestion. | done |
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | done |
-| 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
+| 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | done |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
 | 7 | A | B | Backend skeleton is in place: `backend/app/core/errors.py` already emits the section 10.4 envelope (codes plus additive `UNAUTHORIZED` and `NOT_FOUND`), auth, settings and a read-only DB session. In `backend/app/schemas/` please provide the Pydantic `ErrorEnvelope` and the request and response models (4.3.1, 4.3.2) matching that shape. `GET /v1/categories` needs your `shared/config.py` loader once it is committed. | done |
 | 8 | A | B | Agent runtime is ready: `agents/_shared/runner.py` (validate, run, envelope) and `a2a_glue.py`, plus `python -m scripts.deploy_agent <agent> --include agent_base=agents/_shared --include shared=shared` which packages `shared/` into an agent so your `shared/llm` client can be imported inside agents. Failure replies use an `error` object instead of `payload`; please mirror that in `AgentResponse` in `shared/contracts.py`. | open |
@@ -316,9 +316,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Nominatim or Photon terms allow our low-volume use
 
 **0.5.4 Streamlit map spike**
-- [ ] Hello page draws H3 hexagons coloured by a dummy score
-- [ ] Click on a hexagon is captured
-- [ ] Library chosen (folium or pydeck)
+- [x] Hello page draws H3 hexagons coloured by a dummy score
+- [x] Click on a hexagon is captured
+- [x] Library chosen (folium or pydeck)
 
 **0.5.5 Free-stack inventory**
 - [ ] List every dependency, image, model and service with licence and cost
