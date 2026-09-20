@@ -20,12 +20,12 @@
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
-| 4 | Backend API | 9 | 30 | 65 | 35 | 54% | in progress |
+| 4 | Backend API | 9 | 30 | 65 | 38 | 58% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 63 | 26 | 41% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 56 | 86% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 14 | 50% | in progress |
-| 8 | Polish, hardening and demo | 8 | 21 | 44 | 21 | 48% | in progress |
-| | **Total** | **65** | **229** | **607** | **390** | **64%** | |
+| 8 | Polish, hardening and demo | 8 | 21 | 44 | 23 | 52% | in progress |
+| | **Total** | **65** | **229** | **607** | **395** | **65%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -1007,21 +1007,31 @@ Every database action, with the approval reference. **No entries means the datab
 
 ### Part 5.2: Data-side agents
 
+**Scope decision for the demo (2026-09-20):** none of 5.2.1 to 5.2.4 are built. Each would only wrap
+pipeline code (`pipelines/ingest_city.py`, rent CSV logic, OSM construction tags, affluence
+smoothing) that already runs correctly in-process today — none are on the golden demo path, and
+none change what the owner or a viewer sees. `scoring` and `report-chat` (5.3.1, 5.3.2) already
+demonstrate real, working Nasiko usage end to end (deployed, called live, with a graceful
+fallback), which is what a demo needs to show. Wrapping the other four is real but lower-value
+work for after the demo, not before it; also `market-intel` has no real data to answer from yet
+(2.4 growth-signal fetch is still gated on D-21), so it could only ever say "not available" right
+now.
+
 **5.2.1 `geo-data`**
-- [ ] Wrap Phase 1 pipeline
+- [ ] Wrap Phase 1 pipeline (deprioritized for the demo, see the scope decision above)
 - [ ] Endpoint contract and tests
 
 **5.2.2 `listings`**
-- [ ] Wrap CSV import, geocoding and rent estimation
+- [ ] Wrap CSV import, geocoding and rent estimation (deprioritized for the demo, see above)
 - [ ] Endpoint contract and tests
 
 **5.2.3 `market-intel`**
-- [ ] Answer from OSM construction data and curated notes, with sources
+- [ ] Answer from OSM construction data and curated notes, with sources (deprioritized for the demo, see above; also blocked on D-21 for real data)
 - [ ] Say "not available" when there is no data
 - [ ] Endpoint contract and tests
 
 **5.2.4 `affluence`**
-- [ ] Wrap affluence, competitor tiers and smoothing
+- [ ] Wrap affluence, competitor tiers and smoothing (deprioritized for the demo, see above)
 - [ ] Endpoint contract and tests
 
 ### Part 5.3: Analysis-side agents
@@ -1088,7 +1098,7 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] `AgentGateway` / `NasikoScorer` (`backend/app/services/agent_gateway.py`) call the `sitescout-scoring` agent for a real analysis and fall back to local scoring (`ScorerUnavailableError`) if the agent is unreachable or answers something unusable; wired into `create_app` via `USE_NASIKO_AGENTS`, `NASIKO_USERNAME`, `NASIKO_PASSWORD`. Verified live: `POST /v1/analyses` for cafe/mid produced the same top zone (Officers Colony, 82.6) through the real agent call, logged as `scored an_66b9a05f on Nasiko agent sitescout-scoring v0.1.0 in 1893 ms`.
 
 **5.6.2 Run tracking** 🔒 G-DB
-- [ ] Write `agent_runs` rows
+- [ ] Write `agent_runs` rows (deprioritized for the demo: latency per call is already visible in Tempo and in the backend's own logs, see 5.8; this table would add a persisted history, useful later, not needed to show the demo working)
 - [ ] Owner approves first writes
 - [ ] Record in the Database change log
 
@@ -1099,10 +1109,10 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.7: Scheduler
 
 **5.7.1 Job**
-- [ ] APScheduler OSM refresh (monthly)
+- [ ] APScheduler OSM refresh (monthly) (deprioritized for the demo: a monthly refresh job has nothing to demonstrate in a single live session, and running it against real OSM data is a multi-minute operation better done deliberately, not automatically)
 
 **5.7.2 Staleness**
-- [ ] Mark stale after the freshness window
+- [ ] Mark stale after the freshness window (same reasoning; Bengaluru's data is fresh from the initial load either way)
 
 ### Part 5.8: Observability
 
