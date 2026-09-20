@@ -1,15 +1,23 @@
 """Back-testing CLI for evaluating scoring models (step 7.2.1)."""
 
 import argparse
+import os
 import time
+from typing import Any
 
 import httpx
 
 API_URL = "http://localhost:8000/v1"
-HEADERS = {"X-API-Key": "9CCwCayKUs3ZSQya0LGFNpJ-kk22lGOu", "X-User-Id": "backtest"}
 
 
-def run_analysis(category: str, tier: str = "premium") -> dict:
+def _headers() -> dict[str, str]:
+    api_key = os.environ.get("BACKEND_API_KEY")
+    if not api_key:
+        raise SystemExit("Set BACKEND_API_KEY in the environment before running this script.")
+    return {"X-API-Key": api_key, "X-User-Id": "backtest"}
+
+
+def run_analysis(category: str, tier: str = "premium") -> dict[str, Any]:
     payload = {
         "city": "bengaluru",
         "category": category,
@@ -19,7 +27,7 @@ def run_analysis(category: str, tier: str = "premium") -> dict:
     }
     print(f"\n--- Running Analysis for {category} ({tier}) ---")
 
-    with httpx.Client(base_url=API_URL, headers=HEADERS, timeout=60.0) as client:
+    with httpx.Client(base_url=API_URL, headers=_headers(), timeout=60.0) as client:
         # Create analysis
         try:
             resp = client.post("/analyses", json=payload)
@@ -38,7 +46,7 @@ def run_analysis(category: str, tier: str = "premium") -> dict:
             try:
                 status_resp = client.get(f"/analyses/{analysis_id}")
                 status_resp.raise_for_status()
-                data = status_resp.json()
+                data: dict[str, Any] = status_resp.json()
                 if data.get("status") == "done":
                     return data
                 elif data.get("status") == "failed":
