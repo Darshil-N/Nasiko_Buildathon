@@ -23,9 +23,16 @@ class CityOut(BaseModel):
     name: str
     state: str | None
     country: str
+    status: str = "ready"
 
 
-@router.get("/cities", response_model=list[CityOut], summary="Cities with status ready")
-def cities(session: Annotated[Session, Depends(get_read_session)]) -> list[CityOut]:
+class CitiesOut(BaseModel):
+    """The list wrapper the Streamlit client expects."""
+
+    cities: list[CityOut]
+
+
+@router.get("/cities", response_model=CitiesOut, summary="Cities with status ready")
+def cities(session: Annotated[Session, Depends(get_read_session)]) -> CitiesOut:
     """Only cities whose data is complete are listed."""
-    return [CityOut(**vars(c)) for c in list_ready_cities(session)]
+    return CitiesOut(cities=[CityOut(**vars(c)) for c in list_ready_cities(session)])

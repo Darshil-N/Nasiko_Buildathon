@@ -14,6 +14,9 @@ COPY requirements/base.txt requirements/backend.txt requirements/
 RUN pip install -r requirements/backend.txt
 
 COPY backend/ backend/
+COPY pipelines/ pipelines/
+COPY scoring/ scoring/
+COPY shared/ shared/
 COPY config/ config/
 
 # Run as an unprivileged user.

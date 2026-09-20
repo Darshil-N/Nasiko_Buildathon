@@ -118,9 +118,18 @@ def test_cities_lists_ready_cities_only() -> None:
     session = FakeSession(rows=[row])
     response = client_with(session).get("/v1/cities", headers={"X-API-Key": KEY})
     assert response.status_code == 200
-    assert response.json() == [
-        {"id": 1, "key": "bengaluru", "name": "Bengaluru", "state": "Karnataka", "country": "IN"}
-    ]
+    assert response.json() == {
+        "cities": [
+            {
+                "id": 1,
+                "key": "bengaluru",
+                "name": "Bengaluru",
+                "state": "Karnataka",
+                "country": "IN",
+                "status": "ready",
+            }
+        ]
+    }
     sql = session.statements[0]
     assert "cities.status = " in sql
     assert "ORDER BY cities.name" in sql

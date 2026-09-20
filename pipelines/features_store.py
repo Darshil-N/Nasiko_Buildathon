@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import Connection, text
@@ -34,6 +35,16 @@ UPSERT_CELL_FEATURES = text(
 )
 SELECT_CITY_ID = text("SELECT id FROM cities WHERE key = :key")
 MARK_READY = text("UPDATE cities SET status = 'ready', last_full_refresh = now() WHERE key = :key")
+SELECT_BUNDLE = text(
+    """
+    SELECT h3_index,
+           features -> 'tiers' -> CAST(:tier AS TEXT) AS tier_features,
+           features -> 'anchor_components' AS anchor_components
+    FROM cell_features
+    WHERE category = :category AND feature_version = :feature_version
+    ORDER BY h3_index
+    """
+)
 SELECT_FEATURES = text(
     """
     SELECT h3_index, features -> 'tiers' -> CAST(:tier AS TEXT) AS tier_features
@@ -99,3 +110,27 @@ def load_tier_features(
 def mark_city_ready(conn: Connection, city_key: str) -> None:
     """A city is ready once its features are stored (architecture section 4.4, step 7)."""
     conn.execute(MARK_READY, {"key": city_key})
+
+
+@dataclass(frozen=True)
+class FeatureBundle:
+    """One cell's features for a tier, plus its per-category anchor sums."""
+
+    features: CellFeatures
+    anchor_components: dict[str, float]
+
+
+def load_tier_bundle(
+    session: Session, category: str, tier: str, feature_version: int = 1
+) -> list[FeatureBundle]:
+    """Like ``load_tier_features`` but also returns the anchor sums (read-only)."""
+    result = session.execute(
+        SELECT_BUNDLE, {"category": category, "tier": tier, "feature_version": feature_version}
+    )
+    return [
+        FeatureBundle(
+            features=CellFeatures.model_validate(row.tier_features),
+            anchor_components=dict(row.anchor_components or {}),
+        )
+        for row in result.all()
+    ]

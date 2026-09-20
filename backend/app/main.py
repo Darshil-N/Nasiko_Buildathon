@@ -13,10 +13,11 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api import cities, health
+from backend.app.api import analyses, cities, health
 from backend.app.core.errors import AppError, ErrorCode, error_response, register_error_handlers
 from backend.app.core.logging import configure_logging, request_id_var
 from backend.app.core.settings import API_VERSION, APP_VERSION, Settings, get_settings
+from backend.app.db.analysis_store import open_store
 
 logger = logging.getLogger("backend.access")
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -42,6 +43,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.state.settings = settings
+    # Storage factory used by the analysis endpoints; tests replace it with an in-memory store.
+    app.state.open_store = lambda write: open_store(settings, write=write)
     register_error_handlers(app)
 
     @app.middleware("http")
@@ -82,4 +85,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     prefix = f"/{API_VERSION}"
     app.include_router(health.router, prefix=prefix, tags=["meta"])
     app.include_router(cities.router, prefix=prefix, tags=["meta"])
+    app.include_router(analyses.router, prefix=prefix, tags=["analyses"])
     return app
