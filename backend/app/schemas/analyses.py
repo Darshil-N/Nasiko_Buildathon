@@ -18,8 +18,8 @@ class Answers(BaseModel):
 class Constraints(BaseModel):
     """Hard constraints for the analysis."""
 
-    monthly_rent_budget_inr: float | None = None
-    shop_size_sqft: float | None = None
+    monthly_rent_budget_inr: float | None = Field(default=None, ge=0)
+    shop_size_sqft: float | None = Field(default=None, gt=0)
     preferred_areas: list[str] = Field(default_factory=list)
 
 

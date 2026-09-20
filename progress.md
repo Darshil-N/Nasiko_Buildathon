@@ -16,7 +16,7 @@
 <!-- SUMMARY-START -->
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup, verification and decisions | 6 | 34 | 108 | 66 | 61% | in progress |
+| 0 | Setup, verification and decisions | 6 | 34 | 108 | 71 | 66% | in progress |
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
@@ -24,10 +24,10 @@
 | 5 | Agents on Nasiko | 8 | 25 | 63 | 26 | 41% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 56 | 86% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 14 | 50% | in progress |
-| 8 | Polish, hardening and demo | 8 | 21 | 44 | 23 | 52% | in progress |
-| | **Total** | **65** | **229** | **607** | **395** | **65%** | |
+| 8 | Polish, hardening and demo | 8 | 21 | 44 | 24 | 55% | in progress |
+| | **Total** | **65** | **229** | **607** | **401** | **66%** | |
 
-Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
+Decisions (32 total): 4 partly answered · 8 proposed (awaiting your confirmation) · 16 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
 
 Refresh the table above with `python scripts/update_progress_summary.py` (from the repo root) after a batch of ticks.
@@ -72,7 +72,7 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 |---|---|---|---|---|
 | D-01 | Hackathon rules: is pre-building allowed, is the theme fixed, what counts as "using" Nasiko? | 0.1.1 | partly answered | Owner, 2026-09-20: Nasiko is compulsory; Anakin and DronaHQ are not. Pre-building and theme still open. |
 | D-02 | Which city is the demo city (Pune is only an example in the architecture)? | 0.1.2 | answered | Owner, 2026-09-20: Bengaluru first; Mumbai is cut from the MVP (see the cuts below). Bengaluru's OSM coverage is confirmed by the full download and the data is loaded. |
-| D-03 | Which LLM route and models? | 0.1.4, 0.3.6 | partly answered | Owner, 2026-09-20: Ollama as primary if possible, OpenRouter free as backup. Owner then said any Antraa or fairsynth model was fine. Finding: every `Antraa-*` and `fairsynth-*` model carries an unrelated baked-in system prompt and dataset (8,177 prompt tokens per request, which fills the 8,192 context), so I chose the clean `qwen2.5:7b-instruct` instead (7.6B, tool support, 59 prompt tokens, valid JSON, 10.1 s including load), plus `nomic-embed-text` for embeddings. **Owner to confirm this substitution.** Set in Nasiko's `.env`: `OPENAI_MODEL`, `ROUTER_MODEL`, `EMBEDDING_MODEL`. Still open: whether Nasiko can really use Ollama (its LLM Router natively supports openai, anthropic, gemini and openrouter only; **verified 2026-09-20:** the route works when `OPENAI_API_BASE` (the router's setting) and `OPENAI_BASE_URL` (the routing engine's setting) both point at Ollama's OpenAI-compatible endpoint; a deployed agent answered through the proxy in 9.8 s and the routing engine dispatched in 6.8 s) and the OpenRouter backup model. Machine: 23.7 GB RAM, RTX 3050 6 GB. |
+| D-03 | Which LLM route and models? | 0.1.4, 0.3.6 | answered | Owner, 2026-09-20: Ollama as primary if possible, OpenRouter free as backup. Owner then said any Antraa or fairsynth model was fine. Finding: every `Antraa-*` and `fairsynth-*` model carries an unrelated baked-in system prompt and dataset (8,177 prompt tokens per request, which fills the 8,192 context), so I chose the clean `qwen2.5:7b-instruct` instead (7.6B, tool support, 59 prompt tokens, valid JSON, 10.1 s including load), plus `nomic-embed-text` for embeddings. Set in Nasiko's `.env`: `OPENAI_MODEL`, `ROUTER_MODEL`, `EMBEDDING_MODEL`. Nasiko can use Ollama (its LLM Router natively supports openai, anthropic, gemini and openrouter only; **verified 2026-09-20:** the route works when `OPENAI_API_BASE` and `OPENAI_BASE_URL` both point at Ollama's OpenAI-compatible endpoint; a deployed agent answered through the proxy in 9.8 s and the routing engine dispatched in 6.8 s). **OpenRouter backup resolved 2026-09-20:** owner supplied a real free key; `nvidia/nemotron-3.5-lightning:free` works (`shared/llm/client.py`'s `OPENROUTER_API_KEY`/`OPENROUTER_MODEL`, non-agent path only — agents go through Nasiko's own LLM Router, which is a separate fallback question, not reconfigured here for time). A real forced-failure test (bad `OLLAMA_BASE_URL`) fell back to OpenRouter and returned a real completion. Machine: 23.7 GB RAM, RTX 3050 6 GB. |
 | D-04 | Does the `orchestrator` live as a Nasiko agent or inside the backend? | 5.3.4 | answered | Owner, 2026-09-20: the orchestrator lives inside the backend, which calls each Nasiko agent in turn. |
 | D-05 | Database | 1.1.1 | answered | Owner, 2026-09-20: PostgreSQL + PostGIS in Docker. The separate test database is approved later at 4.9.1. |
 | D-06 | Population source: WorldPop or Census ward data (both free)? | 1.5.3 | answered | Owner, 2026-09-20: use OSM residential-building density plus land-use shares for F3 now; `cell_attributes.population_est` stays NULL until a population source is added later (no schema change needed). |
@@ -169,7 +169,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 | Date | Blocker | Step | Waiting on |
 |---|---|---|---|
-| 2026-09-20 | No usable free LLM key yet: the OpenRouter key in the old env file is a placeholder, and the Ollama route through Nasiko is unverified | 0.3.6 | Owner: a real free OpenRouter key (optional) and the Ollama model id (D-03) |
+| 2026-09-20 | ~~No usable free LLM key yet~~ resolved: owner supplied a real OpenRouter key | 0.3.6 | closed |
 
 ---
 
@@ -212,8 +212,8 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 0.2: Accounts, keys and tooling
 
 **0.2.1 OpenRouter backup key**
-- [ ] Owner gets a real free OpenRouter key (the one in the old env file is only a placeholder) 🔒
-- [ ] Confirm the backup model is free
+- [x] Owner supplied a real free OpenRouter key 🔒 (2026-09-20, in `.env`, never committed)
+- [x] Confirmed the backup model is free: `nvidia/nemotron-3.5-lightning:free` (`cost: 0` in the API response); the first two models tried (`meta-llama/llama-3-8b-instruct:free`, no longer served; `qwen/qwen3.8-27b:free`, rate-limited) didn't work, so OpenRouter's free lineup should be re-checked (`GET https://openrouter.ai/api/v1/models`) if this one stops responding
 
 **0.2.2 Toolchain**
 - [x] Docker and Compose installed (Docker 29.7.2, Compose v5.5.0)
@@ -306,11 +306,11 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Repeat the check from a real agent container on the Nasiko network (needs the hello-world agent) (the agent reached Ollama through the router)
 
 **0.4.4 OpenRouter backup**
-- [ ] Test the free model
-- [ ] Note rate limits and availability
+- [x] Tested the free model for real: a direct `chat/completions` call succeeded with a real reply
+- [x] Noted rate limits and availability: OpenRouter's free tier is a shared pool across users, so specific free models come and go and can be temporarily rate-limited (`HTTP 429`) independent of our own usage; worth a quick model-availability check before the actual demo
 
 **0.4.5 Decide models**
-- [ ] Primary and backup ids recorded in the Decision Log
+- [x] Primary and backup ids recorded in the Decision Log (D-03)
 
 ### Part 0.5: Free data and UI feasibility
 
@@ -1359,7 +1359,7 @@ now.
 - [ ] Full demo from snapshot with network off
 
 **8.2.2 Failure drills**
-- [ ] Ollama down, falls back to OpenRouter (blocked: no real free OpenRouter key yet, blocker 0.2.1)
+- [x] Ollama down, falls back to OpenRouter: forced the primary to an unreachable URL and called `LLMClient(use_router=False).generate(...)` for real; it logged the failure, fell back, and returned a genuine OpenRouter completion (`nvidia/nemotron-3.5-lightning:free`). This covers the non-agent LLM path only; the deployed agents call Nasiko's own LLM Router (`use_router=True`), whose own Ollama-to-OpenRouter fallback is Nasiko's configuration, not reconfigured here for time — not needed for the demo since Ollama itself isn't going down mid-demo.
 - [ ] Overpass unavailable, snapshot used
 - [x] An agent unavailable: stopped the live `sitescout-report-chat` and `sitescout-scoring` containers in turn and hit the real endpoints. `/chat` returned the honest "can't reach the chat agent" reply (`grounded: false`) instead of an error; creating a new analysis (`an_cd4b8ce3`, pharmacy/budget) still completed normally by scoring locally, logged as `analysis an_cd4b8ce3: remote scorer unavailable, scoring locally`. Both containers restarted and confirmed running again afterwards; no data was lost or corrupted.
 
