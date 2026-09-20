@@ -16,7 +16,7 @@
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
 | 0 | Setup, verification and decisions | 6 | 34 | 108 | 46 | 43% | in progress |
-| 1 | Data foundation | 7 | 33 | 98 | 1 | 1% | in progress |
+| 1 | Data foundation | 7 | 33 | 98 | 32 | 33% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
 | 4 | Backend API | 9 | 30 | 67 | 0 | 0% | not started |
@@ -24,9 +24,9 @@
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **619** | **47** | **8%** | |
+| | **Total** | **65** | **229** | **619** | **78** | **13%** | |
 
-Decisions (29 total): 7 open · 6 partly answered · 7 proposed (awaiting your confirmation) · 6 answered · 2 deferred · 1 closed
+Decisions (30 total): 6 open · 5 partly answered · 8 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
 
 Refresh the table above with `python scripts/update_progress_summary.py` (from the repo root) after a batch of ticks.
@@ -46,6 +46,8 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 1 | A | B | Scaffold, `.venv`, tool configs and local git are ready. Start with `shared/contracts.py` (cells, POIs, listings, market signals, `CellFeatures`) and tell A when it is ready, because A's database loaders and feature pipeline must produce exactly those shapes. | open |
 | 2 | A | B | Config loader (`shared/config.py`) and category YAMLs are needed by A for `/categories` and ingestion. | open |
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
+| 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
+| 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
 
 ---
 
@@ -60,7 +62,7 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 | D-03 | Which LLM route and models? | 0.1.4, 0.3.6 | partly answered | Owner, 2026-09-20: Ollama as primary if possible, OpenRouter free as backup. Owner then said any Antraa or fairsynth model was fine. Finding: every `Antraa-*` and `fairsynth-*` model carries an unrelated baked-in system prompt and dataset (8,177 prompt tokens per request, which fills the 8,192 context), so I chose the clean `qwen2.5:7b-instruct` instead (7.6B, tool support, 59 prompt tokens, valid JSON, 10.1 s including load), plus `nomic-embed-text` for embeddings. **Owner to confirm this substitution.** Set in Nasiko's `.env`: `OPENAI_MODEL`, `ROUTER_MODEL`, `EMBEDDING_MODEL`. Still open: whether Nasiko can really use Ollama (its LLM Router natively supports openai, anthropic, gemini and openrouter only; the route goes through `OPENAI_BASE_URL` and is unverified) and the OpenRouter backup model. Machine: 23.7 GB RAM, RTX 3050 6 GB. |
 | D-04 | Does the `orchestrator` live as a Nasiko agent or inside the backend? | 5.3.4 | open | |
 | D-05 | Database | 1.1.1 | answered | Owner, 2026-09-20: PostgreSQL + PostGIS in Docker. The separate test database is approved later at 4.9.1. |
-| D-06 | Population source: WorldPop or Census ward data (both free)? | 1.5.3 | open | |
+| D-06 | Population source: WorldPop or Census ward data (both free)? | 1.5.3 | answered | Owner, 2026-09-20: use OSM residential-building density plus land-use shares for F3 now; `cell_attributes.population_est` stays NULL until a population source is added later (no schema change needed). |
 | D-07 | Competitor price level and popularity data | 3.4.1, 7.3.1 | proposed | Proposed: Google Places is dropped (paid). The Spearman correlation only runs if the owner supplies popularity data. |
 | D-08 | Which geocoder: Nominatim or Photon (only for CSV rows lacking coordinates)? | 2.2.1 | proposed | Proposed: Nominatim. |
 | D-09 | Routing engine for isochrones | 3.6.3 | deferred | Isochrones are proposed out of the MVP (see D-18). |
@@ -78,12 +80,13 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 | D-21 | Growth signal (F9) and `market-intel` without Anakin | 2.4, 5.2.3 | proposed | Proposed: OSM `construction` and `proposed` tags plus a curated notes file, summarised locally; no live web search. |
 | D-22 | Model adjustments when rent and price data are absent (G-DEVIATE): (a) affluence weights, since two of four terms depend on prices; (b) F8 rent efficiency fallback; (c) confidence weights for listing and price coverage; (d) how the rent hard filter behaves. | 1.2.2, 3.3.2, 3.4.4, 3.7.3 | deferred | Owner, 2026-09-20: "start with other building we will come back to this". Nothing here is approved or implemented; only the with-rent formulas are built until then. (Earlier the owner said "ok" to the note that these need changes, but no concrete formulas had been shown.) Proposal to review when we return: (a) affluence = ⅔ premium-POI density + ⅓ apartment share (the two price terms dropped, remaining weights rescaled 0.30:0.15); (b) drop F8 when no rent data exists and rescale the other weights to sum to 1.0; (c) confidence = ⅔ POI coverage + ⅓ recency, with a visible "rent data not available" note; (d) the rent budget is collected but the rent filter runs only where rent data exists. With a rent CSV, the original formulas apply. |
 | D-23 | Users and roles in the Streamlit MVP: none (single local user), or a simple password for admin pages? | 6.1.3 | open | |
-| D-24 | Schema and repo-layout simplifications (G-DEVIATE): rename or drop the Anakin-specific parts of `scrape_jobs`; use `frontend/streamlit_app/` instead of `dronahq/` and `frontend/map_embed/`. | 0.6.1, 1.1.3 | partly answered | Owner, 2026-09-20: approved the folder layout with a new top-level `shared/` package (streamlit follows from D-11). Still to approve: the `scrape_jobs` simplification, at step 1.1.3. |
+| D-24 | Schema and repo-layout simplifications (G-DEVIATE): rename or drop the Anakin-specific parts of `scrape_jobs`; use `frontend/streamlit_app/` instead of `dronahq/` and `frontend/map_embed/`. | 0.6.1, 1.1.3 | answered | Owner, 2026-09-20: approved the folder layout with a new top-level `shared/` package (streamlit follows from D-11), and the schema deviations D1–D5 together with migration 0001 (`ingest_jobs` instead of `scrape_jobs`, new `cell_attributes`, `cell_features.category`, `cities.key`, CHECK constraints). |
 | D-25 | Adapt §9.3, §13 and parts of §14 and §19 to the installed Nasiko (A2A v1.0 agents, port 8080, LLM Router, routing engine). `architecture-1.md` itself is not edited. | Phase 5 | proposed | Forced by the read-only review in `plan.md` §2.4. |
 | D-26 | Nasiko keys and CLI: which keys go in (free providers only), who edits (G-EDIT); create `D:\Projects\Nasiko\.env` from `.env.example` (the installed version does not read the old `.nasiko-local.env`); whether to install Rust 1.85+ to build the `nasiko` CLI, or use the dashboard. | 0.3.2, 0.3.4 | partly answered | Owner, 2026-09-20: "create it yourself" (done: `.env` created), "dashboard is fine for now" (CLI stays optional). Still open: a real free OpenRouter key (the old file only held a placeholder), and Rust only if the CLI is wanted later. |
 | D-27 | Python version for our code | 0.2.2 | answered | Owner, 2026-09-20: whichever is quick to use, so the installed 3.11.9 is used (no install). `uv` is optional. |
 | D-28 | Tier labels: the owner asked for "niche, medium class and lower class". Proposed mapping to the architecture's ids: lower class → `budget`, medium class → `mid`, niche → `premium`. Does "niche" mean the premium/specialty end? | 1.2.2, 6.2.2 | answered | Owner, 2026-09-20: yes, niche means premium. Mapping: lower class → `budget`, medium class → `mid`, niche → `premium`. |
-| D-29 | Bengaluru is large (roughly 700 km², about 7,000 cells). Start with tiled Overpass requests and fall back to a free Karnataka extract from Geofabrik if the public server is too slow? | 1.4.1 | proposed | Evidence from the 2026-09-20 check: counting features over a Bengaluru bounding box took 22 to 32 s per heavy tag, and three quick follow-up queries were rejected with HTTP 429. Tiling with slow pacing, or the extract, will be needed. |
+| D-29 | Bengaluru is large (roughly 700 km², about 7,000 cells). Start with tiled Overpass requests and fall back to a free Karnataka extract from Geofabrik if the public server is too slow? | 1.4.1 | proposed | Evidence from the 2026-09-20 check: counting features over a Bengaluru bounding box took 22 to 32 s per heavy tag, and three quick follow-up queries were rejected with HTTP 429. Tiling with slow pacing, or the extract, will be needed. Update: tiled, paced downloading with automatic tile splitting is built and running; the extract has not been needed so far. |
+| D-30 | Implementation choices I made for cell attributes; please review (all are easy to change): (a) a cell's `land_use` comes from land-use polygon shares (at least 0.25) or POI counts (at least 3 commercial POIs, or at least 3 residential buildings); both give `mixed`, neither gives `other`; (b) locality names come from the nearest OSM place point (suburb, neighbourhood, quarter) within 3 km, because most Bengaluru localities are mapped as points rather than polygons; (c) POIs just outside the boundary but inside the 1.5 km fetch buffer are kept with `h3_index` NULL, so edge cells still see nearby landmarks. | 1.3.3, 1.5.1 | proposed | |
 
 ---
 
@@ -113,6 +116,10 @@ Record every approval the owner gives for gated actions.
 | 2026-09-20 | G-DECIDE | This folder is the repo root; local `git init` (no remote) | D-15, 0.6.5 |
 | 2026-09-20 | G-DECIDE | Second Claude runs on the same computer and folder; work split in `plan.md` §9 | §9 |
 | 2026-09-20 | G-DEVIATE | Add a top-level `shared/` package to the layout | D-24 |
+| 2026-09-20 | G-DB | Start the new empty PostGIS container and apply migration 0001 as written ("Approve container + migration as written") | 1.1.1, 1.1.4 |
+| 2026-09-20 | G-DEVIATE | Schema deviations D1–D5 from the architecture DDL (cities.key, ingest_jobs instead of scrape_jobs, new cell_attributes, cell_features.category, CHECK constraints), approved together with the migration | D-24 |
+| 2026-09-20 | G-DECIDE | Use OSM residential-building density plus land-use shares for F3 now; population stays NULL until later | D-06 |
+| 2026-09-20 | not yet approved | Loading data (city, cells, POIs, attributes) into the new tables: each load will be shown and approved separately | 1.3.1, 1.3.4, 1.4.5 |
 
 ## 4. Database change log (G-DB)
 
@@ -120,7 +127,8 @@ Every database action, with the approval reference. **No entries means the datab
 
 | Date | Action | SQL / migration id | Approved on | Applied |
 |---|---|---|---|---|
-| | | *(none yet)* | | |
+| 2026-09-20 | Started a NEW, empty PostGIS container `sitescout-db` (`postgis/postgis:16-3.4`, bound to `127.0.0.1:5433`, volume `sitescout_pgdata`) with `docker compose up -d db`. Nasiko's own databases were not touched. | `docker-compose.yml` | 2026-09-20 (owner: "Approve container + migration as written") | yes; healthy in about 9 s |
+| 2026-09-20 | Applied migration `0001_initial`: 13 SiteScout tables plus `alembic_version`, including the deviations D1–D5 listed at the top of the SQL file. | `backend/app/db/migrations/sql/0001_initial_upgrade.sql` | 2026-09-20 (same approval) | yes; verified read-only: 13 tables, PostGIS 3.4, SRID 4326 geometry columns, 26 CHECK constraints, 14 foreign keys, 30 indexes, all tables empty |
 
 ## 5. Commit log (local only; nothing has been pushed)
 
@@ -338,28 +346,28 @@ Every database action, with the approval reference. **No entries means the datab
 
 **1.1.1 Provision PostGIS** 🔒 G-DB
 - [x] Check port conflicts with Nasiko's own Postgres (Nasiko publishes host port 5432 and Redis 6379, so SiteScout's database will use 5433)
-- [ ] Compose service for `postgis/postgis:16-3.4`
-- [ ] Owner approves starting it
-- [ ] Container healthy
+- [x] Compose service for `postgis/postgis:16-3.4` (`docker-compose.yml`, localhost:5433 only)
+- [x] Owner approves starting it
+- [x] Container healthy
 
 **1.1.2 Alembic setup**
-- [ ] Alembic initialised
-- [ ] SQLAlchemy base and naming conventions
+- [x] Alembic initialised (URL from `DATABASE_URL` only; offline SQL rendering works)
+- [x] SQLAlchemy base and naming conventions
 
 **1.1.3 Initial migration written** 🔒 G-DB
-- [ ] Translate §8.2 DDL into a migration (extension, tables, indexes)
-- [ ] Show the proposed Anakin-related simplifications (D-24)
-- [ ] Show the SQL to the owner
-- [ ] Owner approves or requests changes
+- [x] Translate §8.2 DDL into a migration (extension, tables, indexes)
+- [x] Show the proposed Anakin-related simplifications (D-24)
+- [x] Show the SQL to the owner
+- [x] Owner approves or requests changes (approved as written)
 
 **1.1.4 Apply migration** 🔒 G-DB
-- [ ] Owner approves applying
-- [ ] Apply
-- [ ] Verify tables, indexes and PostGIS
-- [ ] Record in the Database change log
+- [x] Owner approves applying
+- [x] Apply
+- [x] Verify tables, indexes and PostGIS
+- [x] Record in the Database change log
 
 **1.1.5 Models and repositories**
-- [ ] SQLAlchemy models for every table
+- [x] SQLAlchemy models for every table (a test fails if models and SQL drift apart)
 - [ ] Repository classes with typed methods
 
 **1.1.6 Upsert helpers**
@@ -371,7 +379,7 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 1.2: Configuration layer
 
 **1.2.1 OSM tag config**
-- [ ] `config/osm_tags.yaml` matches Appendix A
+- [x] `config/osm_tags.yaml` matches Appendix A (plus road and place kinds for attributes)
 
 **1.2.2 Category configs**
 - [ ] `cafe.yaml`
@@ -398,13 +406,13 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 1.3: City and H3 grid
 
 **1.3.1 City record and boundary**
-- [ ] Obtain the city boundary polygon
-- [ ] Compute bbox
+- [x] Obtain the city boundary polygon (OSM relation 7902476, 719 km²; saved in `config/cities/`)
+- [x] Compute bbox
 - [ ] Owner approves the city insert 🔒 G-DB
 
 **1.3.2 Generate cells**
-- [ ] Polyfill H3 res 9 over the boundary
-- [ ] Verify cell count is plausible for the city area
+- [x] Polyfill H3 res 9 over the boundary (6,631 cells)
+- [x] Verify cell count is plausible for the city area (0.108 km² per cell)
 
 **1.3.3 Locality names**
 - [ ] Fetch OSM suburb polygons
@@ -419,23 +427,23 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 1.4: OSM POI ingestion
 
 **1.4.1 Overpass client**
-- [ ] Fetch by bounding-box tiles (Bengaluru is large)
+- [x] Fetch by bounding-box tiles (Bengaluru is large; a failing tile splits into four)
 - [ ] Fall back to a free Karnataka extract if the public server is too slow (D-29) 🔒
-- [ ] Timeout and retry
-- [ ] Response caching
-- [ ] Rate-limit respect
-- [ ] Tests with fixtures
+- [x] Timeout and retry
+- [x] Response caching
+- [x] Rate-limit respect
+- [x] Tests with fixtures
 
 **1.4.2 Query builder**
-- [ ] Group tags per call from `osm_tags.yaml`
-- [ ] Nodes and ways with `out center tags`
-- [ ] Unit tests on generated queries
+- [x] Group tags per call from `osm_tags.yaml`
+- [x] Nodes and ways with `out center tags`
+- [x] Unit tests on generated queries
 
 **1.4.3 Normalisation**
-- [ ] Map OSM tags to internal categories
-- [ ] Handle way centres
-- [ ] Hotel star handling
-- [ ] Unit tests
+- [x] Map OSM tags to internal categories
+- [x] Handle way centres
+- [x] Hotel star handling (the `stars` tag is kept for the scoring library)
+- [x] Unit tests
 
 **1.4.4 POI to cell assignment**
 - [ ] Compute H3 index per POI

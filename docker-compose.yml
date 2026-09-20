@@ -1,0 +1,24 @@
+# SiteScout services (free, local). Nasiko runs separately from D:\Projects\Nasiko.
+# Nothing here is started without the owner's approval (rule 2, gate G-DB).
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: sitescout-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sitescout}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sitescout}
+      POSTGRES_DB: ${POSTGRES_DB:-sitescout}
+    ports:
+      # Bound to localhost only, and on 5433 because Nasiko's own Postgres already uses 5432.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - sitescout_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sitescout} -d ${POSTGRES_DB:-sitescout}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  sitescout_pgdata:

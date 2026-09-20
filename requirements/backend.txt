@@ -1,0 +1,6 @@
+# Backend, database and ingestion dependencies (owned by Agent A). All free and open source.
+-r base.txt
+sqlalchemy>=2.0,<3
+alembic>=1.13,<2
+psycopg[binary]>=3.2,<4
+geoalchemy2>=0.15,<1
