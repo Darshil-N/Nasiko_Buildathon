@@ -1,6 +1,7 @@
 """Read-only checks against the real SiteScout database (marker: integration).
 
-Run explicitly, with DATABASE_URL pointing at 127.0.0.1:5433:  pytest -m integration
+Run explicitly:
+DATABASE_URL=postgresql+psycopg://...@127.0.0.1:5433/sitescout pytest -m integration
 
 Every statement here is a SELECT or SHOW; nothing in the database is created or changed.
 """

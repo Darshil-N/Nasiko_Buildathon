@@ -1,0 +1,60 @@
+# Category configuration: cafe
+# Values taken verbatim from architecture-1.md §5.6 and Appendix B.
+# Weights must sum to 1.0 (validated by shared/config.py).
+# Tier targets: budget=0.30, mid=0.55, premium=0.80  (all in 0..1).
+
+category: cafe
+version: "2026-09-a"
+h3_resolution: 9
+catchment_k: 2           # k-ring radius; cafe = walkable (≈350 m radius)
+decay_lambda_m: 350      # exponential decay half-distance for F1 (metres)
+
+tier_labels:
+  budget: "Lower class"
+  mid: "Medium class"
+  premium: "Niche"
+
+tier_targets:
+  budget: 0.30
+  mid: 0.55
+  premium: 0.80
+
+tier_fit:
+  shortfall_penalty: 2.0   # multiplier applied to affluence shortfall below target
+  overshoot_penalty: 0.8   # multiplier applied to affluence overshoot above target
+
+weights:
+  F1_anchor_footfall:      0.28
+  F2_affluence_fit:        0.20
+  F3_residential_demand:   0.07
+  F4_retail_cluster:       0.05
+  F5_competition_inverted: 0.10
+  F6_gap_opportunity:      0.10
+  F7_accessibility:        0.08
+  F8_rent_efficiency:      0.07
+  F9_growth_momentum:      0.05
+
+poi_weights:                # landmark type → footfall weight for this category
+  college:       1.0
+  university:    1.0
+  office:        0.9
+  coworking:     0.9
+  mall:          0.7
+  rail_or_metro: 0.6
+  cinema:        0.5
+  park:          0.4
+  gym:           0.4
+  school:        0.2
+  hospital:      0.2
+
+competitor_categories: [cafe]
+complementary_categories: [restaurant, bank]
+
+answer_modifiers:
+  target_customer.students:          {college: 1.3}
+  target_customer.young_professionals: {office: 1.2, coworking: 1.2}
+
+hard_filters:
+  rent_budget_multiplier: 1.2   # exclude cell if estimated_rent * shop_size > 1.2 * budget
+  exclude_land_use: []          # cafe has no land-use exclusion
+  min_confidence_ranked: 0.25   # cells below this are greyed and unranked

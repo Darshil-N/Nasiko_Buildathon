@@ -1,0 +1,61 @@
+# Category configuration: clothing
+# Values taken from architecture-1.md §5.6 and Appendix B (landmark weight table).
+# Clothing favours market clusters and destination footfall (high catchment k=4, lambda=600).
+
+category: clothing
+version: "2026-09-a"
+h3_resolution: 9
+catchment_k: 4           # clothing shoppers travel → larger k-ring
+decay_lambda_m: 600      # gentler distance decay (metres)
+
+tier_labels:
+  budget: "Lower class"
+  mid: "Medium class"
+  premium: "Niche"
+
+tier_targets:
+  budget: 0.30
+  mid: 0.55
+  premium: 0.80
+
+tier_fit:
+  shortfall_penalty: 2.0
+  overshoot_penalty: 0.8
+
+weights:
+  F1_anchor_footfall:      0.15
+  F2_affluence_fit:        0.15
+  F3_residential_demand:   0.05
+  F4_retail_cluster:       0.25
+  F5_competition_inverted: 0.05
+  F6_gap_opportunity:      0.10
+  F7_accessibility:        0.10
+  F8_rent_efficiency:      0.10
+  F9_growth_momentum:      0.05
+
+poi_weights:
+  mall:              1.0
+  marketplace:       1.0
+  college:           0.6
+  university:        0.6
+  rail_or_metro:     0.6
+  bus_stop:          0.6
+  cinema:            0.5
+  place_of_worship:  0.4
+  office:            0.3
+  supermarket:       0.3
+  school:            0.2
+  hospital:          0.1
+
+competitor_categories: [clothes, boutique, shoes, jewelry, tailor]
+complementary_categories: [mall, marketplace, cafe, bank]
+
+answer_modifiers:
+  segment.ethnic:    {place_of_worship: 1.3, marketplace: 1.2}
+  segment.kids:      {school: 1.5, park: 1.2}
+  needs_parking.yes: {parking: 1.5}
+
+hard_filters:
+  rent_budget_multiplier: 1.2
+  exclude_land_use: []
+  min_confidence_ranked: 0.25
