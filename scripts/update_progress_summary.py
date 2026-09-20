@@ -46,7 +46,12 @@ def decision_counts(text: str) -> Counter[str]:
 
 def build_block(text: str) -> str:
     rows = phase_rows(text)
-    totals = [sum(r[i] for r in rows) for i in (2, 3, 4, 5)]
+    totals = [
+        sum(r[2] for r in rows),
+        sum(r[3] for r in rows),
+        sum(r[4] for r in rows),
+        sum(r[5] for r in rows),
+    ]
     lines = [
         "| Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |",
         "|---|---|---|---|---|---|---|---|",
@@ -73,11 +78,12 @@ def build_block(text: str) -> str:
 def main() -> int:
     text = PROGRESS.read_text(encoding="utf-8")
     block = build_block(text)
+
+    def replace(match: re.Match[str]) -> str:
+        return match.group(1) + block + match.group(2)
+
     new_text, n = re.subn(
-        r"(<!-- SUMMARY-START -->\n).*?(\n<!-- SUMMARY-END -->)",
-        lambda m: m.group(1) + block + m.group(2),
-        text,
-        flags=re.S,
+        r"(<!-- SUMMARY-START -->\n).*?(\n<!-- SUMMARY-END -->)", replace, text, flags=re.S
     )
     if n != 1:
         sys.stderr.write("SUMMARY markers not found exactly once in progress.md\n")

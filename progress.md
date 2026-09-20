@@ -20,13 +20,13 @@
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
 | 4 | Backend API | 9 | 30 | 67 | 11 | 16% | in progress |
-| 5 | Agents on Nasiko | 8 | 25 | 62 | 0 | 0% | not started |
+| 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **617** | **109** | **18%** | |
+| | **Total** | **65** | **229** | **617** | **116** | **19%** | |
 
-Decisions (30 total): 6 open · 5 partly answered · 8 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
+Decisions (31 total): 6 open · 5 partly answered · 9 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
 
 Refresh the table above with `python scripts/update_progress_summary.py` (from the repo root) after a batch of ticks.
@@ -43,12 +43,13 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 
 | # | From | To | Request | Status |
 |---|---|---|---|---|
-| 1 | A | B | Scaffold, `.venv`, tool configs and local git are ready. Start with `shared/contracts.py` (cells, POIs, listings, market signals, `CellFeatures`) and tell A when it is ready, because A's database loaders and feature pipeline must produce exactly those shapes. | open |
+| 1 | A | B | Scaffold, `.venv`, tool configs and local git are ready. Start with `shared/contracts.py` (cells, POIs, listings, market signals, `CellFeatures`) and tell A when it is ready, because A's database loaders and feature pipeline must produce exactly those shapes. | done |
 | 2 | A | B | Config loader (`shared/config.py`) and category YAMLs are needed by A for `/categories` and ingestion. | open |
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
 | 7 | A | B | Backend skeleton is in place: `backend/app/core/errors.py` already emits the section 10.4 envelope (codes plus additive `UNAUTHORIZED` and `NOT_FOUND`), auth, settings and a read-only DB session. In `backend/app/schemas/` please provide the Pydantic `ErrorEnvelope` and the request and response models (4.3.1, 4.3.2) matching that shape. `GET /v1/categories` needs your `shared/config.py` loader once it is committed. | open |
+| 8 | A | B | Agent runtime is ready: `agents/_shared/runner.py` (validate, run, envelope) and `a2a_glue.py`, plus `python -m scripts.deploy_agent <agent> --include agent_base=agents/_shared --include shared=shared` which packages `shared/` into an agent so your `shared/llm` client can be imported inside agents. Failure replies use an `error` object instead of `payload`; please mirror that in `AgentResponse` in `shared/contracts.py`. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
 
 ---
@@ -89,6 +90,7 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 | D-28 | Tier labels: the owner asked for "niche, medium class and lower class". Proposed mapping to the architecture's ids: lower class → `budget`, medium class → `mid`, niche → `premium`. Does "niche" mean the premium/specialty end? | 1.2.2, 6.2.2 | answered | Owner, 2026-09-20: yes, niche means premium. Mapping: lower class → `budget`, medium class → `mid`, niche → `premium`. |
 | D-29 | Bengaluru is large (roughly 700 km², about 7,000 cells). Start with tiled Overpass requests and fall back to a free Karnataka extract from Geofabrik if the public server is too slow? | 1.4.1 | proposed | Evidence from the 2026-09-20 check: counting features over a Bengaluru bounding box took 22 to 32 s per heavy tag, and three quick follow-up queries were rejected with HTTP 429. Tiling with slow pacing, or the extract, will be needed. Update: tiled, paced downloading with automatic tile splitting is built and running; the extract has not been needed so far. |
 | D-30 | Implementation choices I made for cell attributes; please review (all are easy to change): (a) a cell's `land_use` comes from land-use polygon shares (at least 0.25) or POI counts (at least 3 commercial POIs, or at least 3 residential buildings); both give `mixed`, neither gives `other`; (b) locality names come from the nearest OSM place point (suburb, neighbourhood, quarter) within 3 km, because most Bengaluru localities are mapped as points rather than polygons; (c) POIs just outside the boundary but inside the 1.5 km fetch buffer are kept with `h3_index` NULL, so edge cells still see nearby landmarks. | 1.3.3, 1.5.1 | proposed | |
+| D-31 | How the backend logs in to Nasiko: the client uses a username and password. Proposed: a dedicated service user with the least rights Nasiko allows, instead of the admin account whose password is in Nasiko's `.env`. For local development the admin login is used. | 5.6.1 | proposed | |
 
 ---
 
@@ -385,9 +387,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] `config/osm_tags.yaml` matches Appendix A (plus road and place kinds for attributes)
 
 **1.2.2 Category configs**
-- [ ] `cafe.yaml`
-- [ ] `clothing.yaml`
-- [ ] `pharmacy.yaml`
+- [x] `cafe.yaml`
+- [x] `clothing.yaml`
+- [x] `pharmacy.yaml`
 - [ ] Values match §5.3, §5.6 and Appendix B until D-22 is decided
 - [ ] Tier labels lower class, medium class and niche mapped to `budget`, `mid`, `premium` (D-28) 🔒
 
@@ -398,8 +400,8 @@ Every database action, with the approval reference. **No entries means the datab
 **1.2.4 Loader and validator**
 - [ ] Pydantic config models
 - [ ] Validate weights sum to 1.0
-- [ ] Validate tier targets and known feature keys
-- [ ] Unit tests including a failing config
+- [x] Validate tier targets and known feature keys
+- [x] Unit tests including a failing config
 
 **1.2.5 Config sync** 🔒 G-DB
 - [ ] Sync command writes to `category_configs`
@@ -630,15 +632,15 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 3.1: Foundations
 
 **3.1.1 Package layout**
-- [ ] `scoring/features.py`
-- [ ] `scoring/tier_fit.py`
-- [ ] `scoring/score.py`
-- [ ] Pure functions with type hints and docstrings
+- [x] `scoring/features.py`
+- [x] `scoring/tier_fit.py`
+- [x] `scoring/score.py`
+- [x] Pure functions with type hints and docstrings
 
 **3.1.2 Normalisation**
-- [ ] Percentile rank within city
-- [ ] Inversion of negative features
-- [ ] Tests including ties and constant series
+- [x] Percentile rank within city
+- [x] Inversion of negative features
+- [x] Tests including ties and constant series
 
 **3.1.3 Config binding**
 - [ ] Load weights, `poi_weights`, catchment k and lambda per category
@@ -647,29 +649,29 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 3.2: Demand and cluster features (F1, F3, F4)
 
 **3.2.1 F1 anchor footfall**
-- [ ] Distance-decayed sum per §5.2
-- [ ] Per-category lambda (cafe 350, pharmacy 300, clothing 600)
-- [ ] Catchment via k-ring (cafe and pharmacy k=2, clothing k=4)
+- [x] Distance-decayed sum per §5.2
+- [x] Per-category lambda (cafe 350, pharmacy 300, clothing 600)
+- [x] Catchment via k-ring (cafe and pharmacy k=2, clothing k=4)
 - [ ] Tests
 
 **3.2.2 F3 residential demand**
-- [ ] Combine population and building density
+- [x] Combine population and building density
 - [ ] Tests
 
 **3.2.3 F4 retail cluster**
-- [ ] Same-category density
-- [ ] Complementary categories
+- [x] Same-category density
+- [x] Complementary categories
 - [ ] Tests
 
 **3.2.4 Answer modifiers**
-- [ ] Apply modifiers (e.g. students × 1.3 on college weight)
+- [x] Apply modifiers (e.g. students × 1.3 on college weight)
 - [ ] Tests
 
 ### Part 3.3: Affluence and tier fit (F2)
 
 **3.3.1 Premium POI density**
-- [ ] Premium brands from the YAML list
-- [ ] Car showrooms, fine dining, 4–5 star hotels
+- [x] Premium brands from the YAML list
+- [x] Car showrooms, fine dining, 4–5 star hotels
 
 **3.3.2 Affluence index** 🔒 G-DEVIATE
 - [ ] Owner answers D-22(a)
@@ -679,26 +681,26 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Tests
 
 **3.3.3 Tier fit**
-- [ ] Shortfall and overshoot penalties from config
-- [ ] Clamp to 0..1
-- [ ] Tests for all three tiers
+- [x] Shortfall and overshoot penalties from config
+- [x] Clamp to 0..1
+- [x] Tests for all three tiers
 
 ### Part 3.4: Competition, gap and rent efficiency (F5, F6, F8)
 
 **3.4.1 Competitor tier guess**
-- [ ] Brand list lookup
-- [ ] Area affluence rule
+- [x] Brand list lookup
+- [x] Area affluence rule
 - [ ] Optional small-LLM classification through the shared client (cached, validated)
 - [ ] Unknown stays `unknown` and counts as adjacent
 
 **3.4.2 F5 supply**
-- [ ] Decay-weighted supply
-- [ ] Tier weights 1.0 / 0.5 / 0.2
-- [ ] Inversion when scored
+- [x] Decay-weighted supply
+- [x] Tier weights 1.0 / 0.5 / 0.2
+- [x] Inversion when scored
 
 **3.4.3 F6 gap opportunity**
-- [ ] demand = F1_raw × affluence_fit
-- [ ] gap = pct(demand / (supply + 0.5))
+- [x] demand = F1_raw × affluence_fit
+- [x] gap = pct(demand / (supply + 0.5))
 
 **3.4.4 F8 rent efficiency** 🔒 G-DEVIATE
 - [ ] pct(F1_norm / (rent_norm + 0.1)) when rent exists
@@ -709,12 +711,12 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 3.5: Accessibility and growth (F7, F9)
 
 **3.5.1 F7 accessibility**
-- [ ] Combine road class, main-road distance, transit and parking
+- [x] Combine road class, main-road distance, transit and parking
 - [ ] Tests
 
 **3.5.2 F9 growth momentum**
-- [ ] Derive from the OSM growth signal and curated notes
-- [ ] Neutral value when no signal exists, flagged in confidence
+- [x] Derive from the OSM growth signal and curated notes
+- [x] Neutral value when no signal exists, flagged in confidence
 
 ### Part 3.6: Accuracy boosters
 
@@ -735,14 +737,14 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 3.7: Constraints, ranking and explanations
 
 **3.7.1 Hard filters**
-- [ ] Rent filter (rent × size > 1.2 × budget excludes) where rent data exists
-- [ ] Residential-only exclusion with pharmacy exception and flag
-- [ ] Confidence under 0.25 greyed and unranked
+- [x] Rent filter (rent × size > 1.2 × budget excludes) where rent data exists
+- [x] Residential-only exclusion with pharmacy exception and flag
+- [x] Confidence under 0.25 greyed and unranked
 
 **3.7.2 Score and contributions**
-- [ ] `score = 100 × Σ w·f`
-- [ ] Per-feature contributions
-- [ ] Contributions sum to score
+- [x] `score = 100 × Σ w·f`
+- [x] Per-feature contributions
+- [x] Contributions sum to score
 
 **3.7.3 Confidence** 🔒 G-DEVIATE
 - [ ] Owner answers D-22(c)
@@ -750,18 +752,18 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Tests
 
 **3.7.4 Drivers and risks**
-- [ ] Top 3 positive drivers
-- [ ] Top 2 risks
-- [ ] Human-readable driver text from templates (no LLM)
+- [x] Top 3 positive drivers
+- [x] Top 2 risks
+- [x] Human-readable driver text from templates (no LLM)
 
 **3.7.5 Ranking and zones**
 - [ ] Rank and `top_n`
-- [ ] Merge adjacent cells into named zones
-- [ ] Zone name from locality plus side
+- [x] Merge adjacent cells into named zones
+- [x] Zone name from locality plus side
 
 **3.7.6 No-candidates behaviour**
 - [ ] `NO_CANDIDATES` result
-- [ ] Cheapest 3 zones with rent when rent data exists
+- [x] Cheapest 3 zones with rent when rent data exists
 
 ### Part 3.8: Feature build pipeline
 
@@ -778,26 +780,26 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 3.9: Tests and CLI
 
 **3.9.1 Core tests**
-- [ ] Weights sum to 1.0 for every config
-- [ ] Contributions sum to score
+- [x] Weights sum to 1.0 for every config
+- [x] Contributions sum to score
 - [ ] Score in [0, 100]
-- [ ] Premium tier lowers scores in low-affluence cells
-- [ ] Worked example §5.8 within tolerance
+- [x] Premium tier lowers scores in low-affluence cells
+- [x] Worked example §5.8 within tolerance
 
 **3.9.2 Property tests**
-- [ ] Hypothesis tests for bounds and monotonicity
+- [x] Hypothesis tests for bounds and monotonicity
 
 **3.9.3 CLI**
 - [ ] Score from `cell_features` or snapshot
-- [ ] Table and JSON output
+- [x] Table and JSON output
 
 **3.9.4 Category awareness**
-- [ ] Same location scored for all three categories
-- [ ] Results differ as expected
+- [x] Same location scored for all three categories
+- [x] Results differ as expected
 
 **3.9.5 OSM-only mode**
-- [ ] End-to-end scoring with no rent data
-- [ ] Output labels what is missing
+- [x] End-to-end scoring with no rent data
+- [x] Output labels what is missing
 - [ ] Phase 3 exit criteria met
 
 ---
@@ -960,10 +962,10 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.1: Agent framework
 
 **5.1.1 Shared base**
-- [ ] Scaffold from a Nasiko template with `nasiko new`
-- [ ] A2A v1.0 JSON-RPC server with Agent Card and `SendMessage`
-- [ ] Pydantic-validated JSON payloads
-- [ ] Response envelope (`agent`, `version`, `latency_ms`, `warnings[]`)
+- [x] Scaffold from a Nasiko template with `nasiko new` (the hello-world agent follows the template pattern)
+- [x] A2A v1.0 JSON-RPC server with Agent Card and `SendMessage` (proven by the hello-world agent; shared glue in `agents/_shared/a2a_glue.py`)
+- [x] Pydantic-validated JSON payloads (`agents/_shared/runner.py`)
+- [x] Response envelope (`agent`, `version`, `latency_ms`, `warnings[]`) (plus an `error` object instead of `payload` on failure)
 
 **5.1.2 Secrets**
 - [ ] Per-agent secrets via `nasiko secrets set` or environment
@@ -971,7 +973,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 **5.1.3 LLM access**
 - [ ] Reuse the shared LLM client (1.7)
-- [ ] Go through Nasiko's LLM Router with the config from `nasiko llm-config`
+- [~] Go through Nasiko's LLM Router with the config from `nasiko llm-config` (works for the hello-world agent; per-agent `llm-config` not needed because the server defaults point at Ollama)
 
 **5.1.4 Network path**
 - [ ] Agent containers reach our PostGIS
@@ -1024,19 +1026,19 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.4: Cards and containers
 
 **5.4.1 Agent Cards**
-- [ ] A2A Agent Card for each agent
+- [~] A2A Agent Card for each agent (hello-world only so far)
 - [ ] Skill descriptions checked against routing behaviour
 
 **5.4.2 Containers**
-- [ ] Dockerfile per agent
+- [~] Dockerfile per agent (hello-world only so far)
 - [ ] Compose file per agent
 - [ ] `sample_request.json` per agent
 
 ### Part 5.5: Deploy and routing
 
 **5.5.1 Deploy**
-- [ ] Deploy each agent with the CLI or dashboard
-- [ ] Note whether the routing engine sees new agents immediately
+- [~] Deploy each agent with the CLI or dashboard (hello-world done; repeatable command `python -m scripts.deploy_agent <agent>`)
+- [x] Note whether the routing engine sees new agents immediately (yes, no restart needed)
 
 **5.5.2 Direct calls**
 - [ ] `nasiko chat --agent ...` works for each agent
@@ -1055,8 +1057,8 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 5.6: Backend integration
 
 **5.6.1 Client**
-- [ ] `nasiko_client` authenticates to Nasiko
-- [ ] Sends A2A `SendMessage` calls
+- [x] `nasiko_client` authenticates to Nasiko (`backend/app/services/nasiko_client.py`, tested)
+- [x] Sends A2A `SendMessage` calls (also the routing-engine call)
 
 **5.6.2 Run tracking** 🔒 G-DB
 - [ ] Write `agent_runs` rows

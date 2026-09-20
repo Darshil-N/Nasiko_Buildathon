@@ -20,13 +20,17 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "C4", "RUF", "S", "PT", "T2
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["shared", "scoring", "backend", "pipelines"]
+files = ["shared", "scoring", "backend", "pipelines", "scripts", "agents/_shared"]
 explicit_package_bases = true
 mypy_path = "."
 
 [[tool.mypy.overrides]]
-module = ["h3.*", "shapely.*", "geopandas.*"]
+module = ["h3.*", "shapely.*", "geopandas.*", "a2a.*"]  # a2a-sdk exists only inside agent containers
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["agents._shared.a2a_glue"]  # subclasses a class from the container-only a2a-sdk
+disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
