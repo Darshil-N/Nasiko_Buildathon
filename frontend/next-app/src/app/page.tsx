@@ -8,12 +8,20 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 mix-blend-difference">
-        <div className="text-xl font-medium tracking-tight">SiteScout.</div>
-        <div className="space-x-8 text-sm font-medium opacity-80 hidden md:block">
-          <Link href="#features" className="hover:opacity-100 transition-opacity">Platform</Link>
-          <Link href="#technology" className="hover:opacity-100 transition-opacity">Intelligence</Link>
-          <Link href="/new" className="hover:opacity-100 transition-opacity">Launch</Link>
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 bg-black/50 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="Disha AI" className="w-9 h-9 rounded-full" />
+          <span className="text-xl font-medium tracking-tight">Disha AI.</span>
+        </div>
+        <div className="flex items-center gap-4 text-sm font-medium">
+          <Link href="#features" className="opacity-80 hover:opacity-100 transition-opacity hidden md:block">Platform</Link>
+          <Link href="/dashboard/archives" className="opacity-80 hover:opacity-100 transition-opacity hidden md:block">Archives</Link>
+          <Link
+            href="/new"
+            className="bg-white text-black px-5 py-2.5 rounded-full font-semibold hover:scale-105 transition-transform"
+          >
+            Launch
+          </Link>
         </div>
       </nav>
 
@@ -29,11 +37,19 @@ export default function LandingPage() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 text-center max-w-5xl"
         >
-          <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-bold tracking-tighter leading-[0.9] mb-8">
-            Intelligence.
-            <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-300 to-neutral-600">
-              Amplified.
+          <motion.img
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            src="/logo.png"
+            alt="Disha AI"
+            className="w-28 h-28 md:w-36 md:h-36 rounded-[28px] mx-auto mb-10 shadow-[0_0_80px_rgba(168,85,247,0.25)]"
+          />
+
+          <h1 className="text-6xl md:text-8xl lg:text-[9rem] font-bold tracking-tighter leading-[0.9] mb-8 flex items-center justify-center gap-4">
+            Disha
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-orange-300">
+              AI.
             </span>
           </h1>
 
@@ -125,7 +141,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="py-12 text-center text-sm text-neutral-600 font-medium tracking-wide">
-        SiteScout Intelligence Platform &copy; 2026.
+        Disha AI Intelligence Platform &copy; 2026.
       </footer>
     </div>
   );
