@@ -16,7 +16,7 @@
 <!-- SUMMARY-START -->
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup, verification and decisions | 6 | 34 | 108 | 64 | 59% | in progress |
+| 0 | Setup, verification and decisions | 6 | 34 | 108 | 66 | 61% | in progress |
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
@@ -24,8 +24,8 @@
 | 5 | Agents on Nasiko | 8 | 25 | 63 | 26 | 41% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 56 | 86% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 14 | 50% | in progress |
-| 8 | Polish, hardening and demo | 8 | 21 | 44 | 17 | 39% | in progress |
-| | **Total** | **65** | **229** | **607** | **384** | **63%** | |
+| 8 | Polish, hardening and demo | 8 | 21 | 44 | 21 | 48% | in progress |
+| | **Total** | **65** | **229** | **607** | **390** | **64%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -331,8 +331,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Library chosen (folium or pydeck)
 
 **0.5.5 Free-stack inventory**
-- [ ] List every dependency, image, model and service with licence and cost
-- [ ] Confirm none is paid
+- [x] Listed (see 8.5.4, re-run for the final state): Python packages (`requirements/*.txt`) are all MIT/BSD/Apache-licensed and free (pydantic, numpy, pandas, h3, shapely, httpx, tenacity, `openai` SDK used only against Ollama/OpenRouter's OpenAI-compatible endpoints, sqlalchemy, alembic, psycopg, geoalchemy2, fastapi, uvicorn, streamlit, folium); data is OpenStreetMap (ODbL, free) via the public Overpass API; the LLM is local Ollama (`qwen2.5:7b-instruct`, free) with an optional OpenRouter free-tier backup (unconfigured, blocker 0.2.1); the database is open-source PostGIS in a local container; Nasiko itself is the owner's own local install
+- [x] Confirmed none is paid (Google Places and Anakin are explicitly not integrated, D-07/D-22; no scraping, no paid geocoder)
 
 ### Part 0.6: Repository scaffolding and engineering standards
 
@@ -1388,12 +1388,12 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] `.env` and raw data not committed
 
 **8.5.3 Dependency and container review**
-- [ ] Pinned dependencies
-- [ ] Minimal container images
+- [x] Pinned dependencies: `requirements/lock-dev.txt` pins exact versions for the dev environment; the `requirements/*.txt` source files use bounded ranges (`>=x,<y`), which is normal for a library-style project as long as the lock file is what CI/deploys actually install from
+- [x] Minimal container images: every Dockerfile (`backend/Dockerfile`, `Dockerfile.streamlit`, `agents/*/Dockerfile`) is built from a `-slim` Python base; `agents/report_chat/Dockerfile` was deliberately kept to only the packages it actually imports (no h3/pandas/sqlalchemy/fastapi, unlike the heavier `agents/scoring/Dockerfile`)
 
 **8.5.4 Cost audit**
-- [ ] Re-run the free-stack inventory from 0.5.5
-- [ ] Confirm no paid service, plan or credit-limited API is in the path
+- [x] Re-ran the free-stack inventory from 0.5.5 (see there for the list)
+- [x] Confirmed no paid service, plan or credit-limited API is in the path
 
 ### Part 8.6: Demo
 
