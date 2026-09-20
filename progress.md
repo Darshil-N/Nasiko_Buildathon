@@ -16,7 +16,7 @@
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
 | 0 | Setup, verification and decisions | 6 | 34 | 108 | 61 | 56% | in progress |
-| 1 | Data foundation | 7 | 33 | 96 | 67 | 70% | in progress |
+| 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 66 | 72% | in progress |
 | 4 | Backend API | 9 | 30 | 67 | 14 | 21% | in progress |
@@ -24,7 +24,7 @@
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **618** | **215** | **35%** | |
+| | **Total** | **65** | **229** | **618** | **225** | **36%** | |
 
 Decisions (31 total): 6 open · 5 partly answered · 9 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -45,7 +45,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 |---|---|---|---|---|
 | 1 | A | B | Scaffold, `.venv`, tool configs and local git are ready. Start with `shared/contracts.py` (cells, POIs, listings, market signals, `CellFeatures`) and tell A when it is ready, because A's database loaders and feature pipeline must produce exactly those shapes. | done |
 | 2 | A | B | Config loader (`shared/config.py`) and category YAMLs are needed by A for `/categories` and ingestion. | done |
-| 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
+| 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | done |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
 | 7 | A | B | Backend skeleton is in place: `backend/app/core/errors.py` already emits the section 10.4 envelope (codes plus additive `UNAUTHORIZED` and `NOT_FOUND`), auth, settings and a read-only DB session. In `backend/app/schemas/` please provide the Pydantic `ErrorEnvelope` and the request and response models (4.3.1, 4.3.2) matching that shape. `GET /v1/categories` needs your `shared/config.py` loader once it is committed. | open |
@@ -509,22 +509,22 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 1.7: Shared LLM client
 
 **1.7.1 Provider abstraction**
-- [ ] Selection by environment (Ollama primary, OpenRouter free backup)
-- [ ] OpenAI-compatible interface
-- [ ] Inside agents the base URL is Nasiko's LLM Router; elsewhere Ollama or OpenRouter directly
+- [x] Selection by environment (Ollama primary, OpenRouter free backup)
+- [x] OpenAI-compatible interface
+- [x] Inside agents the base URL is Nasiko's LLM Router; elsewhere Ollama or OpenRouter directly
 
 **1.7.2 Strict-JSON helper**
-- [ ] Pydantic validation of outputs
-- [ ] Bounded retries
-- [ ] Timeouts
+- [x] Pydantic validation of outputs
+- [x] Bounded retries
+- [x] Timeouts
 
 **1.7.3 Fallback**
-- [ ] Automatic fall back from primary to backup
-- [ ] Failure logged
+- [x] Automatic fall back from primary to backup
+- [x] Failure logged
 
 **1.7.4 Tests**
-- [ ] Mocked providers
-- [ ] No network in tests
+- [x] Mocked providers
+- [x] No network in tests
 
 ---
 
