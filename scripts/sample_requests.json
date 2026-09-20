@@ -1,0 +1,30 @@
+{
+  "_comment": "Sample request payloads for the backend API (plan step 4.9.3, architecture section 19.4). Used by scripts/smoke_test.sh and as a quick reference; every field here matches the Pydantic schemas in backend/app/schemas/analyses.py.",
+  "create_analysis": {
+    "method": "POST",
+    "path": "/v1/analyses",
+    "body": {
+      "city": "bengaluru",
+      "category": "cafe",
+      "tier": "mid",
+      "answers": {"target_customer": ["students"], "format": "sit_down"},
+      "constraints": {"monthly_rent_budget_inr": 90000, "shop_size_sqft": 600},
+      "top_n": 5
+    }
+  },
+  "compare": {
+    "method": "POST",
+    "path": "/v1/analyses/{analysis_id}/compare",
+    "body": {"zone_h3_indices": ["89618925ac3ffff", "89618925acbffff"]}
+  },
+  "what_if": {
+    "method": "POST",
+    "path": "/v1/analyses/{analysis_id}/what-if",
+    "body": {"tier": "premium", "constraints": {"monthly_rent_budget_inr": 150000}}
+  },
+  "chat": {
+    "method": "POST",
+    "path": "/v1/analyses/{analysis_id}/chat",
+    "body": {"question": "Why does the top zone rank first?"}
+  }
+}

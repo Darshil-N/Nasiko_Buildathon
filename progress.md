@@ -974,9 +974,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Confirm migrations do not run automatically at startup (the container only starts uvicorn)
 
 **4.9.3 Smoke test**
-- [ ] `scripts/smoke_test.sh`
-- [ ] Sample payloads
-- [ ] Phase 4 exit criteria met
+- [x] `scripts/smoke_test.sh`: curl against a running backend (categories, cities, create, poll, recommendations json and geojson, zone detail, cells, compare, what-if, chat, history), using Python only to read JSON fields so it needs no extra tools like `jq`. Run for real: `BACKEND_API_KEY=... ./scripts/smoke_test.sh` passed every check, analysis completed in 4s.
+- [x] Sample payloads (`scripts/sample_requests.json`)
+- [x] Phase 4 exit criteria met
 
 ---
 
@@ -1356,10 +1356,10 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 8.3: End-to-end and performance
 
 **8.3.1 E2E test**
-- [ ] Automated smoke path
+- [x] Automated smoke path (`scripts/smoke_test.sh`, see 4.9.3); passed against the real live backend
 
 **8.3.2 Latency**
-- [ ] Measure against the 30-second target, including local-LLM narrative time
+- [x] Measured against the 30-second target: create-to-done for a real cafe/mid analysis was 4s (well under target, scoring runs on the deployed Nasiko agent). The narrative shown to the owner (`make_narrative`) is templated, not LLM-generated, so it adds no latency; the separate `/chat` follow-up call (LLM-backed, with its own guardrail and possible regeneration) took up to about 14s in testing, which is acceptable since it's a follow-up action after the results are already shown, not on the critical path to the first result.
 
 ### Part 8.4: Documentation
 
