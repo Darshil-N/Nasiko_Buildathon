@@ -2,61 +2,40 @@
 
 import streamlit as st
 
+from frontend.streamlit_app.theme import apply_apple_theme
+
 st.set_page_config(page_title="Administration | SiteScout", layout="wide")
+apply_apple_theme()
 
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<h1>System Telemetry.</h1>", unsafe_allow_html=True)
 st.markdown(
-    """
-<style>
-    .stApp {
-        background-color: #FAF8F5;
-        color: #2C2A29;
-    }
-    h1, h2, h3 {
-        font-family: 'Georgia', serif;
-        color: #1A1A1A;
-        font-weight: normal;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 3rem;
-        white-space: pre-wrap;
-        background-color: transparent;
-        border-radius: 0;
-        color: #5C5855;
-        font-size: 1rem;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: transparent !important;
-        color: #1A1A1A;
-        border-bottom: 2px solid #2C2A29 !important;
-    }
-</style>
-""",
+    "<p style='margin-bottom: 3rem;'>Diagnostics and configuration algorithms.</p>",
     unsafe_allow_html=True,
 )
 
-st.title("Administration & Diagnostics")
-st.markdown(
-    "<p style='color: #5C5855;'>System health, configuration, and data ingestion management.</p><br>",
-    unsafe_allow_html=True,
-)
-
-tab1, tab2, tab3 = st.tabs(["Data Ingestion", "Configuration Weights", "System Telemetry"])
+tab1, tab2, tab3 = st.tabs(["Data Ingestion", "Configuration Weights", "Telemetry"])
 
 with tab1:
-    st.markdown("### Regional Data Ingestion")
-    st.info("City registry and ingestion pipeline schedules.")
+    st.markdown("<div class='apple-card'>", unsafe_allow_html=True)
+    st.markdown("<h3>Regional Data Ingestion</h3>", unsafe_allow_html=True)
+    st.markdown("<p>City registry and ingestion pipeline schedules.</p>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
-    st.markdown("### Scoring Weights Configuration")
-    st.info("Algorithm weight editor with real-time normalization validation.")
+    st.markdown("<div class='apple-card'>", unsafe_allow_html=True)
+    st.markdown("<h3>Scoring Weights Configuration</h3>", unsafe_allow_html=True)
+    st.markdown(
+        "<p>Algorithm weight editor with real-time normalization validation.</p>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with tab3:
-    st.markdown("### System Telemetry")
-    st.info("Autonomous agent status, API latency, and computational error rates.")
-
-# ruff: noqa: E501
+    st.markdown("<div class='apple-card'>", unsafe_allow_html=True)
+    st.markdown("<h3>System Diagnostics</h3>", unsafe_allow_html=True)
+    st.markdown(
+        "<p>Autonomous agent status, API latency, and computational error rates.</p>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
