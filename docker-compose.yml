@@ -20,5 +20,24 @@ services:
       retries: 20
     restart: unless-stopped
 
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sitescout-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Inside the compose network the database is "db" on its normal port.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sitescout}:${POSTGRES_PASSWORD:-sitescout}@db:5432/${POSTGRES_DB:-sitescout}
+      BACKEND_API_KEY: ${BACKEND_API_KEY:?set BACKEND_API_KEY in .env}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8501}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      NASIKO_BASE_URL: ${NASIKO_BASE_URL_IN_DOCKER:-http://host.docker.internal:8080}
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
 volumes:
   sitescout_pgdata:

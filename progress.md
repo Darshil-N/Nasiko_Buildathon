@@ -16,15 +16,15 @@
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
 | 0 | Setup, verification and decisions | 6 | 34 | 108 | 59 | 55% | in progress |
-| 1 | Data foundation | 7 | 33 | 96 | 39 | 41% | in progress |
+| 1 | Data foundation | 7 | 33 | 96 | 48 | 50% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
-| 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
-| 4 | Backend API | 9 | 30 | 67 | 11 | 16% | in progress |
+| 3 | Feature and scoring engine | 9 | 32 | 91 | 65 | 71% | in progress |
+| 4 | Backend API | 9 | 30 | 67 | 14 | 21% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **617** | **116** | **19%** | |
+| | **Total** | **65** | **229** | **617** | **193** | **31%** | |
 
 Decisions (31 total): 6 open · 5 partly answered · 9 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -44,7 +44,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | # | From | To | Request | Status |
 |---|---|---|---|---|
 | 1 | A | B | Scaffold, `.venv`, tool configs and local git are ready. Start with `shared/contracts.py` (cells, POIs, listings, market signals, `CellFeatures`) and tell A when it is ready, because A's database loaders and feature pipeline must produce exactly those shapes. | done |
-| 2 | A | B | Config loader (`shared/config.py`) and category YAMLs are needed by A for `/categories` and ingestion. | open |
+| 2 | A | B | Config loader (`shared/config.py`) and category YAMLs are needed by A for `/categories` and ingestion. | done |
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
@@ -390,16 +390,16 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] `cafe.yaml`
 - [x] `clothing.yaml`
 - [x] `pharmacy.yaml`
-- [ ] Values match §5.3, §5.6 and Appendix B until D-22 is decided
-- [ ] Tier labels lower class, medium class and niche mapped to `budget`, `mid`, `premium` (D-28) 🔒
+- [x] Values match §5.3, §5.6 and Appendix B until D-22 is decided
+- [x] Tier labels lower class, medium class and niche mapped to `budget`, `mid`, `premium` (D-28) 🔒
 
 **1.2.3 Premium brands** 🔒
 - [ ] Owner answers D-17
 - [ ] `config/brands_premium.yaml` written and approved
 
 **1.2.4 Loader and validator**
-- [ ] Pydantic config models
-- [ ] Validate weights sum to 1.0
+- [x] Pydantic config models
+- [x] Validate weights sum to 1.0
 - [x] Validate tier targets and known feature keys
 - [x] Unit tests including a failing config
 
@@ -643,8 +643,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Tests including ties and constant series
 
 **3.1.3 Config binding**
-- [ ] Load weights, `poi_weights`, catchment k and lambda per category
-- [ ] Load `answer_modifiers`
+- [x] Load weights, `poi_weights`, catchment k and lambda per category
+- [x] Load `answer_modifiers`
 
 ### Part 3.2: Demand and cluster features (F1, F3, F4)
 
@@ -652,20 +652,20 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Distance-decayed sum per §5.2
 - [x] Per-category lambda (cafe 350, pharmacy 300, clothing 600)
 - [x] Catchment via k-ring (cafe and pharmacy k=2, clothing k=4)
-- [ ] Tests
+- [x] Tests
 
 **3.2.2 F3 residential demand**
 - [x] Combine population and building density
-- [ ] Tests
+- [x] Tests
 
 **3.2.3 F4 retail cluster**
 - [x] Same-category density
 - [x] Complementary categories
-- [ ] Tests
+- [x] Tests
 
 **3.2.4 Answer modifiers**
 - [x] Apply modifiers (e.g. students × 1.3 on college weight)
-- [ ] Tests
+- [x] Tests
 
 ### Part 3.3: Affluence and tier fit (F2)
 
@@ -690,8 +690,8 @@ Every database action, with the approval reference. **No entries means the datab
 **3.4.1 Competitor tier guess**
 - [x] Brand list lookup
 - [x] Area affluence rule
-- [ ] Optional small-LLM classification through the shared client (cached, validated)
-- [ ] Unknown stays `unknown` and counts as adjacent
+- [x] Optional small-LLM classification through the shared client (cached, validated)
+- [x] Unknown stays `unknown` and counts as adjacent
 
 **3.4.2 F5 supply**
 - [x] Decay-weighted supply
@@ -712,7 +712,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 **3.5.1 F7 accessibility**
 - [x] Combine road class, main-road distance, transit and parking
-- [ ] Tests
+- [x] Tests
 
 **3.5.2 F9 growth momentum**
 - [x] Derive from the OSM growth signal and curated notes
@@ -757,12 +757,12 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Human-readable driver text from templates (no LLM)
 
 **3.7.5 Ranking and zones**
-- [ ] Rank and `top_n`
+- [x] Rank and `top_n`
 - [x] Merge adjacent cells into named zones
 - [x] Zone name from locality plus side
 
 **3.7.6 No-candidates behaviour**
-- [ ] `NO_CANDIDATES` result
+- [x] `NO_CANDIDATES` result
 - [x] Cheapest 3 zones with rent when rent data exists
 
 ### Part 3.8: Feature build pipeline
@@ -782,7 +782,7 @@ Every database action, with the approval reference. **No entries means the datab
 **3.9.1 Core tests**
 - [x] Weights sum to 1.0 for every config
 - [x] Contributions sum to score
-- [ ] Score in [0, 100]
+- [x] Score in [0, 100]
 - [x] Premium tier lowers scores in low-affluence cells
 - [x] Worked example §5.8 within tolerance
 
@@ -790,7 +790,7 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Hypothesis tests for bounds and monotonicity
 
 **3.9.3 CLI**
-- [ ] Score from `cell_features` or snapshot
+- [x] Score from `cell_features` or snapshot
 - [x] Table and JSON output
 
 **3.9.4 Category awareness**
@@ -800,7 +800,7 @@ Every database action, with the approval reference. **No entries means the datab
 **3.9.5 OSM-only mode**
 - [x] End-to-end scoring with no rent data
 - [x] Output labels what is missing
-- [ ] Phase 3 exit criteria met
+- [x] Phase 3 exit criteria met
 
 ---
 
@@ -944,9 +944,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] API tests for every endpoint
 
 **4.9.2 Container**
-- [ ] Backend Dockerfile
-- [ ] Compose service
-- [ ] Confirm migrations do not run automatically at startup
+- [x] Backend Dockerfile (`backend/Dockerfile`: slim Python 3.11, non-root user, health check)
+- [x] Compose service (`backend` in `docker-compose.yml`, localhost:8000 only; checked end to end: health, 401, cities, 404, JSON logs)
+- [x] Confirm migrations do not run automatically at startup (the container only starts uvicorn)
 
 **4.9.3 Smoke test**
 - [ ] `scripts/smoke_test.sh`

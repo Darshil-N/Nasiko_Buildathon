@@ -1,0 +1,16 @@
+.git
+.venv
+.env
+.env.*
+!.env.example
+__pycache__
+*.pyc
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.hypothesis
+data/raw
+data/exports
+tests
+frontend
+*.md
