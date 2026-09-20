@@ -19,12 +19,12 @@
 | 1 | Data foundation | 7 | 33 | 96 | 39 | 41% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
-| 4 | Backend API | 9 | 30 | 67 | 0 | 0% | not started |
+| 4 | Backend API | 9 | 30 | 67 | 11 | 16% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 0 | 0% | not started |
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **617** | **85** | **14%** | |
+| | **Total** | **65** | **229** | **617** | **96** | **16%** | |
 
 Decisions (30 total): 6 open · 5 partly answered · 8 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -48,6 +48,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
+| 7 | A | B | Backend skeleton is in place: `backend/app/core/errors.py` already emits the section 10.4 envelope (codes plus additive `UNAUTHORIZED` and `NOT_FOUND`), auth, settings and a read-only DB session. In `backend/app/schemas/` please provide the Pydantic `ErrorEnvelope` and the request and response models (4.3.1, 4.3.2) matching that shape. `GET /v1/categories` needs your `shared/config.py` loader once it is committed. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
 
 ---
@@ -808,25 +809,25 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 4.1: Application skeleton
 
 **4.1.1 App factory and logging**
-- [ ] FastAPI app factory
-- [ ] Settings via environment
-- [ ] Structured JSON logs with request ID
+- [x] FastAPI app factory (`backend/app/main.py`, run with `uvicorn backend.app.main:create_app --factory`)
+- [x] Settings via environment (secret never printed; placeholder key rejected in production)
+- [x] Structured JSON logs with request ID
 
 **4.1.2 Auth**
-- [ ] `X-API-Key` dependency
-- [ ] `X-User-Id` propagation
+- [x] `X-API-Key` dependency (constant-time comparison)
+- [x] `X-User-Id` propagation
 - [ ] User upsert by `external_id`
 
 **4.1.3 CORS**
-- [ ] Origins from `ALLOWED_ORIGINS`
+- [x] Origins from `ALLOWED_ORIGINS` (only configured origins are allowed)
 
 ### Part 4.2: Persistence layer
 
 **4.2.1 Sessions**
-- [ ] Session and transaction management
+- [x] Session and transaction management (reads use READ ONLY sessions, verified against the real database; write sessions will be separate and explicit)
 
 **4.2.2 Repositories**
-- [ ] Cities and cells
+- [~] Cities and cells (listing ready cities is done)
 - [ ] Features
 - [ ] Analyses and recommendations
 - [ ] Jobs and configs
@@ -839,17 +840,17 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Compare and what-if models
 
 **4.3.2 Error envelope**
-- [ ] Envelope model
-- [ ] Five error codes mapped to HTTP statuses
-- [ ] Global exception handlers
+- [ ] Envelope model (Agent B's Pydantic model; the runtime shape is in `backend/app/core/errors.py`)
+- [x] Five error codes mapped to HTTP statuses (plus additive `UNAUTHORIZED` and `NOT_FOUND`)
+- [x] Global exception handlers (no stack traces or secrets reach the client)
 
 ### Part 4.4: Meta endpoints
 
 **4.4.1 Health**
-- [ ] `GET /health`
+- [x] `GET /health` (public liveness plus a database hint)
 
 **4.4.2 Cities**
-- [ ] `GET /cities` returns ready only
+- [x] `GET /cities` returns ready only
 
 **4.4.3 Categories**
 - [ ] `GET /categories` from config
