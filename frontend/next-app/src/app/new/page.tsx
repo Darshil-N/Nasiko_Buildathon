@@ -9,19 +9,44 @@ import { useRouter } from "next/navigation";
 export default function NewAnalysis() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [category, setCategory] = useState("cafe");
+  const [tier, setTier] = useState("mid");
+  const [rent, setRent] = useState(150000);
+  const [sqft, setSqft] = useState(800);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      router.push("/dashboard/demo");
-    }, 1500);
+    setError(null);
+    try {
+      const res = await fetch("/api/analyses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          city: "bengaluru",
+          category,
+          tier,
+          answers: {},
+          constraints: { monthly_rent_budget_inr: rent, shop_size_sqft: sqft },
+          top_n: 10,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error?.message ?? "Could not start the analysis.");
+      }
+      router.push(`/dashboard/demo?id=${data.analysis_id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start the analysis.");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans selection:bg-black selection:text-white">
-      <nav className="p-8">
+      <nav className="p-8 flex items-center gap-4">
+        <img src="/logo.png" alt="Disha AI" className="w-8 h-8 rounded-full" />
         <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium hover:opacity-70 transition-opacity">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Platform</span>
@@ -46,15 +71,21 @@ export default function NewAnalysis() {
                   <div className="space-y-6">
                     <div>
                       <label className="block text-sm font-semibold mb-2 ml-1">Target City</label>
-                      <select className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 appearance-none border-none">
+                      <select
+                        className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 appearance-none border-none"
+                        disabled
+                      >
                         <option value="bengaluru">Bengaluru</option>
-                        <option value="pune">Pune</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold mb-2 ml-1">Business Category</label>
-                      <select className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 appearance-none border-none">
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 appearance-none border-none"
+                      >
                         <option value="cafe">Cafe / Coffee Shop</option>
                         <option value="clothing">Apparel Retail</option>
                         <option value="pharmacy">Pharmacy / Healthcare</option>
@@ -63,7 +94,11 @@ export default function NewAnalysis() {
 
                     <div>
                       <label className="block text-sm font-semibold mb-2 ml-1">Target Tier</label>
-                      <select className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 appearance-none border-none">
+                      <select
+                        value={tier}
+                        onChange={(e) => setTier(e.target.value)}
+                        className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 appearance-none border-none"
+                      >
                         <option value="premium">Premium / Niche</option>
                         <option value="mid">Mid-Market</option>
                         <option value="budget">Value / Budget</option>
@@ -81,7 +116,9 @@ export default function NewAnalysis() {
                       <label className="block text-sm font-semibold mb-2 ml-1">Maximum Monthly Rent (INR)</label>
                       <input
                         type="number"
-                        defaultValue={150000}
+                        min={0}
+                        value={rent}
+                        onChange={(e) => setRent(Number(e.target.value))}
                         className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 border-none"
                       />
                     </div>
@@ -90,7 +127,9 @@ export default function NewAnalysis() {
                       <label className="block text-sm font-semibold mb-2 ml-1">Expected Floor Space (Sq. Ft.)</label>
                       <input
                         type="number"
-                        defaultValue={800}
+                        min={1}
+                        value={sqft}
+                        onChange={(e) => setSqft(Number(e.target.value))}
                         className="w-full bg-[#f5f5f7] rounded-2xl px-4 py-4 text-[#1d1d1f] font-medium outline-none focus:ring-2 focus:ring-black/5 border-none"
                       />
                     </div>
@@ -98,6 +137,9 @@ export default function NewAnalysis() {
                 </div>
 
                 <div className="pt-8">
+                  {error && (
+                    <p className="text-sm font-medium text-red-600 mb-4">{error}</p>
+                  )}
                   <button
                     type="submit"
                     disabled={loading}
