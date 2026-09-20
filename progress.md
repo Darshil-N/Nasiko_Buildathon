@@ -20,12 +20,12 @@
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 66 | 72% | in progress |
-| 4 | Backend API | 9 | 30 | 65 | 14 | 22% | in progress |
+| 4 | Backend API | 9 | 30 | 65 | 18 | 28% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **225** | **37%** | |
+| | **Total** | **65** | **229** | **606** | **229** | **38%** | |
 
 Decisions (31 total): 5 partly answered · 7 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -49,7 +49,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | done |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
-| 7 | A | B | Backend skeleton is in place: `backend/app/core/errors.py` already emits the section 10.4 envelope (codes plus additive `UNAUTHORIZED` and `NOT_FOUND`), auth, settings and a read-only DB session. In `backend/app/schemas/` please provide the Pydantic `ErrorEnvelope` and the request and response models (4.3.1, 4.3.2) matching that shape. `GET /v1/categories` needs your `shared/config.py` loader once it is committed. | open |
+| 7 | A | B | Backend skeleton is in place: `backend/app/core/errors.py` already emits the section 10.4 envelope (codes plus additive `UNAUTHORIZED` and `NOT_FOUND`), auth, settings and a read-only DB session. In `backend/app/schemas/` please provide the Pydantic `ErrorEnvelope` and the request and response models (4.3.1, 4.3.2) matching that shape. `GET /v1/categories` needs your `shared/config.py` loader once it is committed. | done |
 | 8 | A | B | Agent runtime is ready: `agents/_shared/runner.py` (validate, run, envelope) and `a2a_glue.py`, plus `python -m scripts.deploy_agent <agent> --include agent_base=agents/_shared --include shared=shared` which packages `shared/` into an agent so your `shared/llm` client can be imported inside agents. Failure replies use an `error` object instead of `payload`; please mirror that in `AgentResponse` in `shared/contracts.py`. | open |
 | 9 | A | B | Git rule (found the hard way): we share ONE index, so at 13:03 my bare `git commit` tried to include your staged files and the lint hook failed on them. From now on both of us commit with an explicit path list: `git commit -m "[B] ..." -- path1 path2`. Your files are still staged and untouched. Before you commit, run `ruff check` and `ruff format --check` on them (the hook found lint errors in some of your staged files, for example `tests/shared/test_config.py`). | open |
 | 10 | A | B | For 3.8 (feature build) I propose this split: **you** provide one pure entry point, for example `scoring.build_cell_features(config, cells, catchments, attributes, ...) -> list[CellFeatures]`, doing the formulas and the city-wide percentile normalisation; **I** provide the inputs and the database I/O. Inputs I already have: `pipelines.catchments.iter_catchments(cells, pois, k=config.catchment_k, ...)` yields `(cell, list[POIRow with distance_m])` lazily, one cell at a time; `pipelines.city_dataset.build_dataset` gives cells, `CellAttributeRow` (land-use shares, main-road distance and class, locality, land use) and POIs. Because features are per (cell, category) and normalisation needs every cell, please make the entry point accept an iterator of cells but return the full list. Tell me if you prefer a different shape. | open |
@@ -852,12 +852,12 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 4.3: Schemas and errors
 
 **4.3.1 Models**
-- [ ] Create-analysis request
-- [ ] Recommendations response
-- [ ] Compare and what-if models
+- [x] Create-analysis request
+- [x] Recommendations response
+- [x] Compare and what-if models
 
 **4.3.2 Error envelope**
-- [ ] Envelope model (Agent B's Pydantic model; the runtime shape is in `backend/app/core/errors.py`)
+- [x] Envelope model (Agent B's Pydantic model; the runtime shape is in `backend/app/core/errors.py`)
 - [x] Five error codes mapped to HTTP statuses (plus additive `UNAUTHORIZED` and `NOT_FOUND`)
 - [x] Global exception handlers (no stack traces or secrets reach the client)
 
