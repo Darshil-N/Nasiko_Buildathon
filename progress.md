@@ -20,12 +20,12 @@
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
-| 4 | Backend API | 9 | 30 | 65 | 18 | 28% | in progress |
+| 4 | Backend API | 9 | 30 | 65 | 34 | 52% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 43 | 66% | in progress |
-| 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
+| 7 | Validation and tuning | 6 | 10 | 28 | 5 | 18% | in progress |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **304** | **50%** | |
+| | **Total** | **65** | **229** | **606** | **325** | **54%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -56,6 +56,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 11 | A | B | Owner decisions that unblock you (details in the Decision Log): **D-22 approved**: implement the no-rent variants (affluence = 2/3 premium-POI density + 1/3 apartment share; drop F8 and rescale weights when there is no rent data; confidence = 2/3 POI coverage + 1/3 recency plus a visible note; rent filter only where rent data exists), and keep the original formulas for when a rent CSV exists. **D-19 answered**: no boosters are scored; provide day-part profile, age-skew proxy and medical density as explanatory info in the zone detail data, without changing the score or the weight tables (skip parking, late-night, seasonality). **D-23**: Streamlit has no login. **D-04**: the orchestrator lives in the backend (I will call the agents in order). | open |
 | 12 | A | B | More owner answers: **D-17**: please draft `config/brands_premium.yaml` per category (cafe, clothing, pharmacy) and tier (budget, mid, premium) for Bengaluru and put it in front of the owner for approval before it is used (also fix the placeholder that lists a pharmacy chain as premium). **Cuts**: PDF export is cut (skip 4.6.4 and the export screen 6.2.9) and Mumbai is cut. Growth signal (F9) and the compare-zones screen stay in. D-30 defaults are kept. | open |
 | 13 | A | B | Feature build is done on my side and ranks with your engine: `pipelines/build_features.py` builds `CellFeatures` for all 3 tiers per cell and category (I used your `affluence_index`, `tier_fit`, `gap_opportunity`, `accessibility`, `growth_momentum`, `residential_demand`, `pct` unchanged) and `ScoreEngine.rank` consumes them. Observations for you: (1) top scores are tightly clustered (about 80 to 83 for all 10 zones), so ranking resolution is low; percentile ranks saturate near 1.0 for several features, so please look at spreading the score. (2) `rank` returns single cells; zone merging and names (3.7.5) are still needed. (3) `scoring.features.confidence_score` still has the four-term formula; I use `pipelines.build_features.confidence_without_rent` (D-22c), please fold it into your library. (4) I stored per-category decay sums (`anchor_components`) so F1 can be recomputed with `answer_modifiers` at request time; a helper for that would be useful. | open |
+| 14 | A | B | The analysis API is committed (`93ebc1a`): `POST/GET /v1/analyses`, `/recommendations` (`?format=geojson`), `/zones/{rank}`, `/cells` (every scored cell with rank and score, for your heat map), `/compare`, `/what-if`, `GET /v1/categories` (tiers with labels and wizard questions) and `GET /v1/cities` now returns `{"cities": [...]}`. `GET /v1/analyses/{id}` returns status and, once done, the recommendations too. Create returns 202. Please build the wizard and Results tabs against these; shapes are in `backend/app/schemas/`. Notes for your library: (1) `ScoreEngine` keeps F8 at a neutral 0.5 when there is no rent data, but the approved D-22b says to drop F8 and rescale the other weights; please implement that. (2) The real cafe/mid ranking is Officers Colony 82.6, Corporation Quarters 82.0, SBI Colony 81.8: still tightly clustered (see row 13). (3) Analyses are not saved until the owner approves runtime writes, so end-to-end runs against the real database wait for that approval; the endpoints work today in tests. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
 
 ---
@@ -874,33 +875,33 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] `GET /cities` returns ready only
 
 **4.4.3 Categories**
-- [ ] `GET /categories` from config
+- [x] `GET /categories` from config (tiers with labels plus the wizard questions, answer ids matching `answer_modifiers`)
 
 ### Part 4.5: Analysis lifecycle
 
 **4.5.1 Create analysis** 🔒 G-DB
-- [ ] Validate input
-- [ ] Insert queued analysis
-- [ ] Return id immediately
+- [x] Validate input
+- [x] Insert queued analysis
+- [x] Return id immediately
 - [ ] Owner approves first run against a real database
 
 **4.5.2 Pipeline runner**
-- [ ] Load features
-- [ ] Score
-- [ ] Narratives
-- [ ] Mark done or failed
+- [x] Load features
+- [x] Score
+- [x] Narratives (deterministic templates until the report agent exists)
+- [x] Mark done or failed
 
 **4.5.3 Status endpoint**
-- [ ] `GET /analyses/{id}`
+- [x] `GET /analyses/{id}`
 
 **4.5.4 Recommendations endpoint**
-- [ ] Ranked zones with breakdown
-- [ ] GeoJSON option
+- [x] Ranked zones with breakdown
+- [x] GeoJSON option
 - [ ] Nearby listings when a CSV exists
-- [ ] Data notes
+- [x] Data notes
 
 **4.5.5 Zone detail endpoint**
-- [ ] `GET /analyses/{id}/zones/{rank}`
+- [x] `GET /analyses/{id}/zones/{rank}` (with landmarks within 500 m)
 
 **4.5.6 Snapshot fallback**
 - [ ] Use the last good snapshot on upstream failure
@@ -909,11 +910,11 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 4.6: Analysis extras
 
 **4.6.1 Compare**
-- [ ] `POST /analyses/{id}/compare` for 2–3 zones
+- [x] `POST /analyses/{id}/compare` for 2–3 zones
 
 **4.6.2 What-if**
-- [ ] Re-score with changed tier, budget, size or category
-- [ ] Rank-change output
+- [x] Re-score with changed tier, budget, size or category
+- [x] Rank-change output
 
 **4.6.3 Chat**
 - [ ] `POST /chat` contract

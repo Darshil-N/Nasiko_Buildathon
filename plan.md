@@ -2,7 +2,7 @@
 
 > Source of truth for *what* the product is: `architecture-1.md` (section numbers appear as §n). That file is not edited.
 > This file is the full plan of changes for the **free MVP**, split into **phases → parts → steps**. Step IDs (`P.Part.Step`, e.g. `3.2.1`) are reused in `progress.md`, which tracks how much of this plan is done.
-> Plan version: 0.5 · Created: 2026-09-20 · Revised: 2026-09-20 (free-MVP rescope, adapted to the installed Nasiko, scope confirmed by the owner, work split for two agents, repo scaffolded) · Status: Phase 0 mostly done; Phase 1 in progress (database created and migrated with the owner's approval; OSM download running; no data loaded yet).
+> Plan version: 0.5 · Created: 2026-09-20 · Revised: 2026-09-20 (free-MVP rescope, adapted to the installed Nasiko, scope confirmed by the owner, work split for two agents, repo scaffolded) · Status: Phase 0 mostly done; Phase 1 about 70% (database migrated and Bengaluru OSM data loaded with the owner's approval); scoring library and LLM client built by Agent B; backend skeleton, Nasiko client and agent runtime built by Agent A. PDF export and Mumbai are cut (see §6).
 >
 > **Revision 0.2:** Anakin and DronaHQ are no longer required. Nasiko stays compulsory. Everything must be free to build and run. Items marked *(proposed)* are my suggested replacements that still need the owner's confirmation in the Decision Log.
 >
@@ -49,7 +49,7 @@
 | Geocoding | Nominatim or Photon | Nominatim or Photon, only for CSV rows lacking coordinates | Proposed (D-08) |
 | Competitor price level and popularity | Google Places (paid) | *(proposed)* Not used. Tier from brand list, area affluence and optional local LLM. | Proposed (D-07) |
 | Walking isochrones | OpenRouteService, Valhalla | *(proposed)* Out of the MVP; k-ring catchments only | Proposed (D-18) |
-| PDF export | DronaHQ add-on or WeasyPrint | *(proposed)* WeasyPrint in the backend | Proposed (D-10) |
+| PDF export | DronaHQ add-on or WeasyPrint | **Cut from the MVP** (owner, 2026-09-20) | Closed (D-10) |
 | Public access | ngrok or Cloudflare Tunnel | *(proposed)* Local only; free Cloudflare Tunnel only if remote access is needed | Proposed (D-12) |
 | Observability | Nasiko OpenTelemetry and Phoenix | Nasiko's own (OpenTelemetry, Tempo, Loki, dashboard, `nasiko observe`); free | Fixed |
 | Scheduler | APScheduler | APScheduler (unchanged, free) | Fixed |
