@@ -74,7 +74,32 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <button className="mt-8 w-full bg-black text-white py-4 rounded-full font-semibold hover:scale-[1.02] transition-transform">
+          <button
+            onClick={() => {
+              const element = document.createElement("a");
+              const file = new Blob([
+                "SiteScout Intelligence Dossier\n" +
+                "===============================\n\n" +
+                "Zone: Mangamannapalya\n" +
+                "Rank: 1 (Premium Cafe Segment)\n" +
+                "Score: 84.0/100\n" +
+                "Confidence: 100%\n\n" +
+                "GROWTH CATALYSTS:\n" +
+                "- High footfall anchors (offices, colleges, malls) within reach.\n" +
+                "- Area spending power exactly matches the Premium tier.\n\n" +
+                "POTENTIAL RISKS:\n" +
+                "- High competitor density. 4 existing premium cafes detected within 2km radius.\n\n" +
+                "ANALYST BRIEFING:\n" +
+                "Mangamannapalya represents the optimal balance of raw footfall and disposable income for a premium cafe. The presence of major corporate parks guarantees strong weekday morning and lunch traffic. While competition exists, the underlying demographic velocity supports further market absorption. Securing a lease under 150,000 INR will ensure break-even within 8 months."
+              ], {type: 'text/plain'});
+              element.href = URL.createObjectURL(file);
+              element.download = "SiteScout_Dossier_Mangamannapalya.txt";
+              document.body.appendChild(element); // Required for this to work in FireFox
+              element.click();
+              document.body.removeChild(element);
+            }}
+            className="mt-8 w-full bg-black text-white py-4 rounded-full font-semibold hover:scale-[1.02] transition-transform"
+          >
             Export Full Dossier
           </button>
         </div>
