@@ -28,7 +28,7 @@ class BackendClient:
     def __init__(self) -> None:
         self.base_url = BACKEND_URL
         self.headers = {
-            "X-API-Key": os.getenv("API_KEY", "dummy"),
+            "X-API-Key": os.getenv("BACKEND_API_KEY", "9CCwCayKUs3ZSQya0LGFNpJ-kk22lGOu"),
             "X-User-Id": "streamlit-local",
         }
         self.client = httpx.Client(

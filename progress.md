@@ -22,10 +22,10 @@
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 35 | 54% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 64 | 13 | 20% | in progress |
-| 6 | Streamlit app | 7 | 25 | 65 | 43 | 66% | in progress |
-| 7 | Validation and tuning | 6 | 10 | 28 | 5 | 18% | in progress |
-| 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **608** | **332** | **55%** | |
+| 6 | Streamlit app | 7 | 25 | 65 | 56 | 86% | in progress |
+| 7 | Validation and tuning | 6 | 10 | 28 | 14 | 50% | in progress |
+| 8 | Polish, hardening and demo | 8 | 21 | 44 | 13 | 30% | in progress |
+| | **Total** | **65** | **229** | **608** | **367** | **60%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -1149,8 +1149,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Step 4 review and submit
 
 **6.2.3 Progress state**
-- [ ] Poll the backend until done
-- [ ] Failure state
+- [x] Poll the backend until done
+- [x] Failure state
 
 **6.2.4 Screen 3: Results**
 - [x] Map with hex overlay
@@ -1206,13 +1206,13 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Choose folium or pydeck from the Phase-0 spike
 
 **6.4.2 Overlay**
-- [ ] Hex overlay coloured by score with legend
+- [x] Hex overlay coloured by score with legend
 - [ ] Top-10 pins
 - [ ] Layer toggles (landmarks, competitors, listings)
 
 **6.4.3 Interaction**
-- [ ] Click a hex or pin to select a zone
-- [ ] Zone summary shown
+- [x] Click a hex or pin to select a zone
+- [x] Zone summary shown
 
 ### Part 6.5: Packaging and access
 
@@ -1231,16 +1231,16 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 6.6: UX states
 
 **6.6.1 Edge cases**
-- [ ] City not ready
-- [ ] `NO_CANDIDATES`
-- [ ] Low-confidence warning
-- [ ] Tier-area mismatch reason
-- [ ] Out-of-scope chat reply
-- [ ] Upstream failure with snapshot date
+- [x] City not ready
+- [x] `NO_CANDIDATES`
+- [x] Low-confidence warning
+- [x] Tier-area mismatch reason
+- [x] Out-of-scope chat reply
+- [x] Upstream failure with snapshot date
 
 **6.6.2 Caveats**
-- [ ] Data-source caveats on every result
-- [ ] "Rent data not available" state when there is no CSV
+- [x] Data-source caveats on every result
+- [x] "Rent data not available" state when there is no CSV
 
 ### Part 6.7: Documentation
 
@@ -1273,9 +1273,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Pass or fail per case
 
 **7.2.2 All categories**
-- [ ] Clothing: markets above residential
-- [ ] Cafe: colleges and offices high
-- [ ] Pharmacy: hospitals and dense housing high
+- [x] Clothing: markets above residential
+- [x] Cafe: colleges and offices high
+- [x] Pharmacy: hospitals and dense housing high
 
 ### Part 7.3: Popularity correlation (optional)
 
@@ -1288,11 +1288,11 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 7.4: Sensitivity and stability
 
 **7.4.1 Weight perturbation**
-- [ ] ±20 percent perturbation
-- [ ] Top-10 change report
+- [x] ±20 percent perturbation
+- [x] Top-10 change report
 
 **7.4.2 Tier direction**
-- [ ] Premium moves toward high-affluence zones
+- [x] Premium moves toward high-affluence zones
 
 ### Part 7.5: Tuning
 
@@ -1309,9 +1309,9 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 7.6: Metrics
 
 **7.6.1 Pitch numbers**
-- [ ] Top-3 hit rate
-- [ ] Average confidence of top 10
-- [ ] End-to-end latency
+- [x] Top-3 hit rate
+- [x] Average confidence of top 10
+- [x] End-to-end latency
 - [ ] Spearman if 7.3 ran
 - [ ] Phase 7 exit criteria met
 
@@ -1324,17 +1324,17 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 8.1: Feature completion
 
 **8.1.1 Feature check**
-- [ ] Compare works for all categories
-- [ ] What-if works for all categories
-- [ ] Chat works for all categories
+- [x] Compare works for all categories
+- [x] What-if works for all categories
+- [x] Chat works for all categories
 - [-] PDF works for all categories (cut by the owner, 2026-09-20)
 
 **8.1.2 Success criteria**
-- [ ] Result in under 30 seconds
-- [ ] Clothing example behaves correctly
-- [ ] Categories score differently
-- [ ] Tier change re-ranks
-- [ ] Back-test shows good above bad
+- [x] Result in under 30 seconds
+- [x] Clothing example behaves correctly
+- [x] Categories score differently
+- [x] Tier change re-ranks
+- [x] Back-test shows good above bad
 
 **8.1.3 Nasiko showcase**
 - [ ] Every agent appears in the Nasiko dashboard
@@ -1363,7 +1363,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 **8.4.1 README**
 - [ ] Setup steps from §19.3 as adapted
-- [ ] Run and test instructions
+- [x] Run and test instructions
 
 **8.4.2 Runbook**
 - [ ] Refresh procedures
@@ -1399,10 +1399,10 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Rehearse the 5-minute script without Anakin or DronaHQ segments
 
 **8.6.2 Slides**
-- [ ] Problem and solution
-- [ ] Limitations statement
-- [ ] Back-test numbers
-- [ ] Roadmap
+- [x] Problem and solution
+- [x] Limitations statement
+- [x] Back-test numbers
+- [x] Roadmap
 
 **8.6.3 Backup**
 - [ ] Recorded run

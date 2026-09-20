@@ -1,6 +1,48 @@
-# Placeholder for Indian premium brands (awaiting owner approval for D-17)
-brands:
-  - Westside
-  - Zara
-  - Starbucks
-  - Apollo Pharmacy
+# Draft brand classifications for Bengaluru (D-17)
+# Awaiting owner approval before being used for real scoring.
+
+cafe:
+  premium:
+    - Starbucks
+    - Third Wave Coffee Roasters
+    - Blue Tokai
+    - Araku Coffee
+    - Matteo Coffea
+  mid:
+    - Cafe Coffee Day
+    - Hatti Kaapi
+    - Chai Point
+    - Chaayos
+  budget:
+    - "Local bakeries and unbranded tea stalls"
+
+clothing:
+  premium:
+    - Zara
+    - H&M
+    - Marks & Spencer
+    - Mango
+    - FabIndia
+  mid:
+    - Westside
+    - Zudio
+    - Pantaloons
+    - Max Fashion
+    - Reliance Trends
+  budget:
+    - Vishal Mega Mart
+    - Brand Factory
+    - "Local unbranded apparel"
+
+pharmacy:
+  premium:
+    - "Independent premium boutique pharmacies (rare)"
+    - Wellness Forever (often premium formats)
+  mid:
+    - Apollo Pharmacy
+    - MedPlus
+    - Netmeds Pharmacy
+    - Pharmeasy
+  budget:
+    - "Local generic chemists"
+    - Jan Aushadhi Kendra

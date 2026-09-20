@@ -2,26 +2,15 @@
 
 import streamlit as st
 
-from frontend.streamlit_app.client import APIError
+from frontend.streamlit_app.client import APIError, client
 
 st.set_page_config(page_title="New Analysis - SiteScout", layout="wide")
 
 st.title("New Analysis")
 
 try:
-    # Stub fetching for now (the endpoints will be built by Agent A)
-    # cities = client.get_cities()
-    # categories = client.get_categories()
-    cities = {"cities": [{"key": "pune", "name": "Pune", "status": "ready"}]}
-    categories = {
-        "categories": [
-            {
-                "key": "cafe",
-                "name": "Cafe",
-                "tiers": {"premium": "Premium", "mid": "Mid", "budget": "Budget"},
-            }
-        ]
-    }
+    cities = client.get_cities()
+    categories = client.get_categories()
 except Exception as e:
     st.error(f"Failed to load form data: {e}")
     st.stop()
@@ -64,9 +53,8 @@ if submitted:
 
     with st.spinner("Starting analysis..."):
         try:
-            # response = client.create_analysis(payload)
-            # st.session_state["analysis_id"] = response["analysis_id"]
-            st.session_state["analysis_id"] = "an_dummy"
+            response = client.create_analysis(payload)
+            st.session_state["analysis_id"] = response["analysis_id"]
             st.success("Analysis started!")
             st.switch_page("pages/3_Results.py")
         except APIError as e:

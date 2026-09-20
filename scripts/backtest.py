@@ -1,48 +1,94 @@
 """Back-testing CLI for evaluating scoring models (step 7.2.1)."""
 
 import argparse
-import json
-from pathlib import Path
+import time
 
-# Note: In a real run, this would load cells, score them, and compare
-# against expected_ranking from data/backtest/*.json
+import httpx
+
+API_URL = "http://localhost:8000/v1"
+HEADERS = {"X-API-Key": "9CCwCayKUs3ZSQya0LGFNpJ-kk22lGOu", "X-User-Id": "backtest"}
 
 
-def run_backtest(category: str, data_dir: Path) -> None:
-    """Run back-test for a category."""
-    case_file = data_dir / f"{category}_cases.json"
-    if not case_file.exists():
-        print(f"No back-test cases found for {category} at {case_file}.")
+def run_analysis(category: str, tier: str = "premium") -> dict:
+    payload = {
+        "city": "bengaluru",
+        "category": category,
+        "tier": tier,
+        "constraints": {},
+        "top_n": 10,
+    }
+    print(f"\n--- Running Analysis for {category} ({tier}) ---")
+
+    with httpx.Client(base_url=API_URL, headers=HEADERS, timeout=60.0) as client:
+        # Create analysis
+        try:
+            resp = client.post("/analyses", json=payload)
+            resp.raise_for_status()
+            analysis_id = resp.json()["analysis_id"]
+        except Exception as e:
+            print(f"Failed to create analysis: {e}")
+            if "resp" in locals():
+                print(resp.text)
+            return {}
+
+        print(f"Created analysis {analysis_id}. Polling...")
+
+        # Poll
+        for _ in range(30):
+            try:
+                status_resp = client.get(f"/analyses/{analysis_id}")
+                status_resp.raise_for_status()
+                data = status_resp.json()
+                if data.get("status") == "done":
+                    return data
+                elif data.get("status") == "failed":
+                    print("Analysis failed.")
+                    return {}
+            except Exception as e:
+                print(f"Failed during polling: {e}")
+                return {}
+            time.sleep(1.0)
+
+        print("Timeout waiting for analysis.")
+        return {}
+
+
+def run_backtest(category: str) -> None:
+    """Run back-test for a category by creating an analysis on the live backend."""
+    start_time = time.time()
+
+    # Run a premium tier analysis
+    result = run_analysis(category, tier="premium")
+    if not result:
         return
 
-    with open(case_file, encoding="utf-8") as f:
-        cases = json.load(f)
+    latency = time.time() - start_time
 
-    print(f"Running back-test for {category} ({len(cases)} cases)...")
+    recs = result.get("recommendations", [])
+    print(f"\nTop Recommendations for {category.upper()} (Latency: {latency:.2f}s):")
 
-    # Fake implementation for now
-    hit_count = 0
-    total = len(cases)
+    conf_sum = 0.0
+    for i, rec in enumerate(recs[:10], start=1):
+        zone = rec.get("zone_name", "Unknown")
+        score = rec.get("score", 0.0)
+        conf = rec.get("confidence", 0.0)
+        conf_sum += conf
+        drivers = rec.get("top_drivers", [])
 
-    for _case in cases:
-        # Score the city, get the rank of case["zone_name"]
-        # If in top 3, hit_count += 1
-        pass
+        print(f"{i}. {zone} (Score: {score:.1f}, Conf: {conf:.2f})")
+        if drivers:
+            print(f"   Drivers: {', '.join(drivers[:2])}")
 
-    hit_rate = (hit_count / total) * 100 if total > 0 else 0
-    print(f"Top-3 hit rate: {hit_rate:.1f}%")
-    print("Pass: False")
+    avg_conf = conf_sum / len(recs) if recs else 0.0
+    print(f"\nAverage Confidence of Top {len(recs)}: {avg_conf:.2f}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run scoring back-tests.")
+    parser = argparse.ArgumentParser(description="Run scoring back-tests against the live backend.")
     parser.add_argument("--category", default="all", help="Category to test (or 'all')")
-    parser.add_argument("--data-dir", default="data/backtest", help="Directory containing cases")
 
     args = parser.parse_args()
-    data_path = Path(args.data_dir)
-
     categories = ["cafe", "clothing", "pharmacy"] if args.category == "all" else [args.category]
 
     for cat in categories:
-        run_backtest(cat, data_path)
+        run_backtest(cat)
