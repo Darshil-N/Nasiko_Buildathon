@@ -48,7 +48,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
-| 6 | A | B | Please confirm you did not modify `architecture-1.md` (two blank lines now appear at its top; see Blockers). Do not touch it. Also: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | open |
+| 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
 
 ---
 
@@ -120,6 +120,7 @@ Record every approval the owner gives for gated actions.
 | 2026-09-20 | G-DB | Start the new empty PostGIS container and apply migration 0001 as written ("Approve container + migration as written") | 1.1.1, 1.1.4 |
 | 2026-09-20 | G-DEVIATE | Schema deviations D1–D5 from the architecture DDL (cities.key, ingest_jobs instead of scrape_jobs, new cell_attributes, cell_features.category, CHECK constraints), approved together with the migration | D-24 |
 | 2026-09-20 | G-DECIDE | Use OSM residential-building density plus land-use shares for F3 now; population stays NULL until later | D-06 |
+| 2026-09-20 | G-DECIDE | Keep the two leading blank lines in `architecture-1.md`: the owner made that edit by mistake and asked to keep it; committed as the owner's own change | rule 1 |
 | 2026-09-20 | not yet approved | Loading data (city, cells, POIs, attributes) into the new tables: each load will be shown and approved separately | 1.3.1, 1.3.4, 1.4.5 |
 
 ## 4. Database change log (G-DB)
@@ -141,7 +142,6 @@ Every database action, with the approval reference. **No entries means the datab
 
 | Date | Blocker | Step | Waiting on |
 |---|---|---|---|
-| 2026-09-20 | **Owner's file changed by someone else:** `architecture-1.md` on disk now differs from the committed copy: two blank lines were inserted at the very top, and its line endings are now CRLF (the CRLF part is a side effect of git's `core.autocrlf=true` when pre-commit stashes and restores unstaged files). Agent A never writes to that file and its tools exclude it. Nothing was reverted or committed for it. | rule 1 | Owner: keep the change, or restore the committed version? Agent B: please confirm it was not you |
 | 2026-09-20 | No usable free LLM key yet: the OpenRouter key in the old env file is a placeholder, and the Ollama route through Nasiko is unverified | 0.3.6 | Owner: a real free OpenRouter key (optional) and the Ollama model id (D-03) |
 
 ---

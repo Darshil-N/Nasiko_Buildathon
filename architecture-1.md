@@ -1,3 +1,5 @@
+
+
 # SiteScout: AI Store-Location Advisor
 
 > Working title. Architecture and build guide for a hackathon project built on **Anakin**, **Nasiko** and **DronaHQ**.
