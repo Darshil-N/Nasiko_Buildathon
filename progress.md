@@ -16,7 +16,7 @@
 | Phase | Name | Parts | Steps | Micro-tasks | Done | Progress | Status |
 |---|---|---|---|---|---|---|---|
 | 0 | Setup, verification and decisions | 6 | 34 | 108 | 46 | 43% | in progress |
-| 1 | Data foundation | 7 | 33 | 98 | 32 | 33% | in progress |
+| 1 | Data foundation | 7 | 33 | 96 | 39 | 41% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 91 | 0 | 0% | not started |
 | 4 | Backend API | 9 | 30 | 67 | 0 | 0% | not started |
@@ -24,7 +24,7 @@
 | 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **619** | **78** | **13%** | |
+| | **Total** | **65** | **229** | **617** | **85** | **14%** | |
 
 Decisions (30 total): 6 open · 5 partly answered · 8 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
 <!-- SUMMARY-END -->
@@ -48,6 +48,7 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 3 | A | B | LLM client (`shared/llm/`) is needed by A for the Nasiko agents (Phase 5). | open |
 | 4 | A | B | The database is live and migrated (13 tables, all empty). Features are stored per (cell, category) because F1, F4, F5 and F6 depend on the category, so `CellFeatures` in `shared/contracts.py` needs a `category` field. New per-cell inputs come from `cell_attributes` (land-use shares, distance to the nearest main road and its class) plus POIs with their whitelisted `tags` (for example `building`, hotel `stars`). Please add a `CellAttributes` model to the contracts when you need it. | open |
 | 5 | A | B | FYI: `ruff check` reports 7 findings in `tests/shared/test_config.py` (your file). | open |
+| 6 | A | B | Please confirm you did not modify `architecture-1.md` (two blank lines now appear at its top; see Blockers). Do not touch it. Also: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | open |
 
 ---
 
@@ -140,6 +141,7 @@ Every database action, with the approval reference. **No entries means the datab
 
 | Date | Blocker | Step | Waiting on |
 |---|---|---|---|
+| 2026-09-20 | **Owner's file changed by someone else:** `architecture-1.md` on disk now differs from the committed copy: two blank lines were inserted at the very top, and its line endings are now CRLF (the CRLF part is a side effect of git's `core.autocrlf=true` when pre-commit stashes and restores unstaged files). Agent A never writes to that file and its tools exclude it. Nothing was reverted or committed for it. | rule 1 | Owner: keep the change, or restore the committed version? Agent B: please confirm it was not you |
 | 2026-09-20 | No usable free LLM key yet: the OpenRouter key in the old env file is a placeholder, and the Ollama route through Nasiko is unverified | 0.3.6 | Owner: a real free OpenRouter key (optional) and the Ollama model id (D-03) |
 
 ---
@@ -415,9 +417,9 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Verify cell count is plausible for the city area (0.108 km² per cell)
 
 **1.3.3 Locality names**
-- [ ] Fetch OSM suburb polygons
-- [ ] Assign `locality_name` to each cell
-- [ ] Report cells with no locality
+- [~] Fetch OSM place data (mostly points rather than polygons, see D-30; download running)
+- [~] Assign `locality_name` to each cell (code and tests done; real run waits for the download)
+- [~] Report cells with no locality (part of the QA report)
 
 **1.3.4 Persist cells** 🔒 G-DB
 - [ ] Store centroid and boundary
@@ -446,11 +448,11 @@ Every database action, with the approval reference. **No entries means the datab
 - [x] Unit tests
 
 **1.4.4 POI to cell assignment**
-- [ ] Compute H3 index per POI
-- [ ] Drop POIs outside the city polygon
+- [x] Compute H3 index per POI
+- [x] POIs outside the city cells keep `h3_index` NULL instead of being dropped (D-30c)
 
 **1.4.5 Persist POIs** 🔒 G-DB
-- [ ] Upsert with natural keys
+- [x] Upsert with natural keys (loader written and tested with a fake connection; `load` is a dry run unless `--write`)
 - [ ] Owner approves the write
 - [ ] Record in the Database change log
 
@@ -462,41 +464,39 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 1.5: Land use, buildings, population and roads
 
 **1.5.1 Land use**
-- [ ] Fetch OSM landuse polygons
-- [ ] Classify each cell (residential, commercial, mixed, other)
+- [~] Fetch OSM landuse polygons (download running)
+- [~] Classify each cell (residential, commercial, mixed, other): code and tests done, rule in D-30
 
 **1.5.2 Residential density**
-- [ ] Count residential buildings per cell
-- [ ] Compute apartment share
+- [~] Count residential buildings per cell (stored as `residential_building` POIs; counts feed the land-use class)
+- [ ] Compute apartment share (from the POIs' `building` tag in the feature stage)
 
 **1.5.3 Population** 🔒 G-DECIDE
-- [ ] Owner answers D-06
-- [ ] Download the chosen dataset
-- [ ] Aggregate to H3 cells
+- [x] Owner answers D-06: OSM building density and land-use shares are used for the MVP; no population download is needed and `population_est` stays NULL
 
 **1.5.4 Road and transit attributes**
-- [ ] Road class and main-road distance
-- [ ] Transit stops within walking distance
-- [ ] Parking presence
+- [~] Road class and main-road distance (code and tests done; needs the roads download)
+- [~] Transit stops within walking distance (bus stops and stations are downloaded as POIs)
+- [~] Parking presence (parking is downloaded as POIs)
 
 ### Part 1.6: Geo-data pipeline and QA
 
 **1.6.1 Ingestion pipeline**
-- [ ] `pipelines/ingest_city.py` runs steps 1–3 of §4.4
-- [ ] Clear logging and exit codes
-- [ ] `--dry-run` mode that writes nothing
+- [~] `pipelines/ingest_city.py` runs steps 1–3 of §4.4 (`fetch`, `grid`, `build`, `load` exist; the full real run waits for the download)
+- [x] Clear logging and exit codes
+- [x] Dry-run mode that writes nothing (`load` without `--write`)
 
 **1.6.2 Idempotency**
 - [ ] Two runs give identical counts
 - [ ] Test added
 
 **1.6.3 QA report**
-- [ ] Counts per category and per cell
+- [~] Counts per category and per cell (QA report written to `data/raw/osm/<city>/qa_report.json`; real run pending)
 - [ ] Spot check with the owner's known areas
 - [ ] Gaps recorded
 
 **1.6.4 Tests**
-- [ ] Fixture Overpass responses
+- [x] Fixture Overpass responses (mocked transports)
 - [ ] Integration test on a test database 🔒 G-DB
 - [ ] Phase 1 exit criteria met (with 1.7)
 

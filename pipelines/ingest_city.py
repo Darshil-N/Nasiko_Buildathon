@@ -4,9 +4,15 @@ Stages run independently and never touch a database unless a later stage says so
 
     python -m pipelines.ingest_city fetch --city config/cities/bengaluru.yaml
     python -m pipelines.ingest_city grid  --city config/cities/bengaluru.yaml
+    python -m pipelines.ingest_city build --city config/cities/bengaluru.yaml
+    python -m pipelines.ingest_city load  --city config/cities/bengaluru.yaml
+    python -m pipelines.ingest_city load  --city config/cities/bengaluru.yaml --write
 
 ``fetch`` downloads OSM data tile by tile into ``data/raw/osm/<city>/`` (cached, resumable).
 ``grid`` builds the H3 cells for the city polygon and prints a summary.
+``build`` assembles the downloaded data into cells, attributes and POIs and prints a QA report.
+``load`` upserts that dataset into PostGIS. It is a dry run unless ``--write`` is given, and
+``--write`` may only be used after the owner has approved the database write (rule 2, G-DB).
 """
 
 from __future__ import annotations
@@ -14,12 +20,14 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 from pipelines.boundary import area_km2, city_bbox, load_boundary
 from pipelines.city_config import CityConfig, load_city
+from pipelines.city_dataset import CityDataset, build_dataset, qa_summary
 from pipelines.grid import polyfill
 from pipelines.osm_config import DEFAULT_PATH, Kind, OsmTagConfig, load_osm_tags
 from pipelines.osm_fetch import fetch_group
@@ -106,15 +114,46 @@ def run_grid(city: CityConfig) -> int:
     return len(cells)
 
 
+def run_load(dataset: CityDataset, version: str, *, write: bool) -> None:
+    """Dry-run by default; with ``write`` upsert the dataset in a single transaction."""
+    if not write:
+        logger.info(
+            "DRY RUN: would upsert %d cells, %d attribute rows and %d POIs. "
+            "Nothing was written. Re-run with --write once the owner has approved.",
+            len(dataset.cells),
+            len(dataset.attributes),
+            len(dataset.pois),
+        )
+        return
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise SystemExit("DATABASE_URL is not set; refusing to guess a database")
+    from shapely.geometry import box
+    from sqlalchemy import create_engine
+
+    from pipelines.db_load import load_dataset
+
+    bbox_wkt = box(*load_boundary(dataset.city.boundary_file).bounds).wkt
+    engine = create_engine(url)
+    with engine.begin() as conn:  # one transaction: all or nothing
+        counts = load_dataset(conn, dataset, bbox_wkt, version)
+    logger.info("loaded: %s", counts)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="SiteScout city ingestion")
-    parser.add_argument("stage", choices=["fetch", "grid"])
+    parser.add_argument("stage", choices=["fetch", "grid", "build", "load"])
     parser.add_argument(
         "--city", type=Path, required=True, help="path to config/cities/<city>.yaml"
     )
     parser.add_argument("--tags", type=Path, default=DEFAULT_PATH)
     parser.add_argument("--groups", nargs="*", help="only these groups (default: all)")
     parser.add_argument("--refresh", action="store_true", help="re-download groups already on disk")
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="load: really write to the database (needs owner approval and DATABASE_URL)",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -123,6 +162,16 @@ def main(argv: list[str] | None = None) -> int:
         run_grid(city)
         return 0
     config = load_osm_tags(args.tags)
+    if args.stage in {"build", "load"}:
+        dataset = build_dataset(city, config, RAW_ROOT / city.key / "latest")
+        report = qa_summary(dataset)
+        report_path = RAW_ROOT / city.key / "qa_report.json"
+        report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        logger.info("QA report written to %s", report_path)
+        sys.stdout.write(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
+        if args.stage == "load":
+            run_load(dataset, config.version, write=args.write)
+        return 0
     groups = args.groups or all_groups(config)
     unknown = sorted(set(groups) - {r.group for r in config.categories})
     if unknown:

@@ -2,7 +2,7 @@
 
 > Source of truth for *what* the product is: `architecture-1.md` (section numbers appear as §n). That file is not edited.
 > This file is the full plan of changes for the **free MVP**, split into **phases → parts → steps**. Step IDs (`P.Part.Step`, e.g. `3.2.1`) are reused in `progress.md`, which tracks how much of this plan is done.
-> Plan version: 0.5 · Created: 2026-09-20 · Revised: 2026-09-20 (free-MVP rescope, adapted to the installed Nasiko, scope confirmed by the owner, work split for two agents, repo scaffolded) · Status: planning; only read-only checks done so far, plus one new file, `D:\Projects\Nasiko\.env` (no code, no database).
+> Plan version: 0.5 · Created: 2026-09-20 · Revised: 2026-09-20 (free-MVP rescope, adapted to the installed Nasiko, scope confirmed by the owner, work split for two agents, repo scaffolded) · Status: Phase 0 mostly done; Phase 1 in progress (database created and migrated with the owner's approval; OSM download running; no data loaded yet).
 >
 > **Revision 0.2:** Anakin and DronaHQ are no longer required. Nasiko stays compulsory. Everything must be free to build and run. Items marked *(proposed)* are my suggested replacements that still need the owner's confirmation in the Decision Log.
 >
@@ -45,7 +45,7 @@
 | LLM | OpenRouter or OpenAI (paid) | **Ollama local model as primary**, OpenRouter free models as backup | Answered by owner. Nasiko's LLM Router supports OpenRouter natively; Ollama is not a built-in provider and would need an OpenAI-compatible base-URL route, which must be verified (§2.4) |
 | Database | PostgreSQL + PostGIS | **PostgreSQL + PostGIS in Docker** (free, open source) | Answered by owner |
 | POIs, land use, buildings, roads | OSM via Overpass | OSM via Overpass (unchanged, free) | Fixed |
-| Population density | WorldPop or Census | WorldPop or Census (both free) | Open (D-06) |
+| Population density | WorldPop or Census | OSM residential-building density plus land-use shares for the MVP; `population_est` stays NULL until a source is added | Answered by owner (D-06) |
 | Geocoding | Nominatim or Photon | Nominatim or Photon, only for CSV rows lacking coordinates | Proposed (D-08) |
 | Competitor price level and popularity | Google Places (paid) | *(proposed)* Not used. Tier from brand list, area affluence and optional local LLM. | Proposed (D-07) |
 | Walking isochrones | OpenRouteService, Valhalla | *(proposed)* Out of the MVP; k-ring catchments only | Proposed (D-18) |
@@ -242,7 +242,7 @@ Phases 2 and 3 can overlap once Phase 1 finishes: scoring can be built against O
 ### Part 1.5: Land use, buildings, population and roads
 - **1.5.1** Classify land use per cell (residential, commercial, mixed, other).
 - **1.5.2** Compute residential building density and apartment share.
-- **1.5.3** Ingest population density from the chosen free source (D-06).
+- **1.5.3** Population: per D-06 the MVP uses OSM residential-building density and land-use shares instead; `cell_attributes.population_est` stays NULL until a population source is added.
 - **1.5.4** Extract road class, distance to main road, transit stops and parking presence (inputs to F7).
 
 ### Part 1.6: Geo-data pipeline and QA
