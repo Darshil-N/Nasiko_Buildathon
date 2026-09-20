@@ -632,7 +632,7 @@ Rough load: Agent A about 60 percent of the micro-tasks, Agent B about 40 percen
 2. **`progress.md`:** tick only your own micro-tasks, with targeted edits. Never rewrite the whole file. Refresh the summary table with `python scripts/update_progress_summary.py` after you finish a batch.
 3. **Database:** only Agent A ever connects to a database, and only after the owner approves (gate G-DB). Agent B works on fixtures and never opens a connection. Nasiko's own databases are never touched by anyone.
 4. **Nasiko and Docker:** only Agent A operates the Nasiko stack at `D:\Projects\Nasiko`.
-5. **Git:** local commits only, no push (rule 5). Each agent stages only its own paths (never `git add -A`), never rewrites history, and prefixes commit subjects with `[A]` or `[B]`.
+5. **Git:** local commits only, no push (rule 5). Each agent stages only its own paths (never `git add -A`), never rewrites history, and prefixes commit subjects with `[A]` or `[B]`. **We share one Git index**, so a bare `git commit` also commits whatever the other agent has staged (and fails if their files fail the lint hook). Always commit with an explicit path list: `git commit -m "[A] ..." -- path1 path2`.
 6. **Dependencies:** each agent adds its own `requirements/<area>.txt`. Adding to `requirements/base.txt` is announced in the Handoffs table. Every package must be free and open source (standard 10).
 7. **Decisions and questions for the owner:** either agent may ask the owner in its own chat and must record the question and answer in the Decision Log. Nothing is assumed (rule 6).
 8. **Tests:** no network and no database in default test runs; use the `integration` marker for anything that needs them.
