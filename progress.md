@@ -22,10 +22,10 @@
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 69 | 75% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 18 | 28% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
-| 6 | Streamlit app | 7 | 25 | 65 | 0 | 0% | not started |
+| 6 | Streamlit app | 7 | 25 | 65 | 43 | 66% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **235** | **39%** | |
+| | **Total** | **65** | **229** | **606** | **278** | **46%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -1113,63 +1113,63 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 6.1: App skeleton and backend client
 
 **6.1.1 Layout**
-- [ ] Multipage Streamlit app under `frontend/streamlit_app/`
+- [x] Multipage Streamlit app under `frontend/streamlit_app/`
 
 **6.1.2 Backend client**
-- [ ] Typed client with `X-API-Key` and `X-User-Id` headers
-- [ ] Timeouts
-- [ ] Friendly error mapping
-- [ ] API key stays server-side
+- [x] Typed client with `X-API-Key` and `X-User-Id` headers
+- [x] Timeouts
+- [x] Friendly error mapping
+- [x] API key stays server-side
 
 **6.1.3 Users and roles** 🔒 G-DECIDE
 - [ ] Owner answers D-23
 - [ ] Implement the chosen approach
 
 **6.1.4 Configuration**
-- [ ] Environment variables documented
+- [x] Environment variables documented
 
 ### Part 6.2: Owner screens
 
 **6.2.1 Screen 1: My analyses**
-- [ ] Table of past analyses
-- [ ] "New analysis" button
+- [x] Table of past analyses
+- [x] "New analysis" button
 
 **6.2.2 Screen 2: Wizard**
-- [ ] Step 1 city and category cards
-- [ ] Step 2 tier selection
-- [ ] Step 3 constraints and category questions
-- [ ] Step 4 review and submit
+- [x] Step 1 city and category cards
+- [x] Step 2 tier selection
+- [x] Step 3 constraints and category questions
+- [x] Step 4 review and submit
 
 **6.2.3 Progress state**
 - [ ] Poll the backend until done
 - [ ] Failure state
 
 **6.2.4 Screen 3: Results**
-- [ ] Map with hex overlay
-- [ ] Ranked table
-- [ ] KPI tiles
-- [ ] Layer toggles
-- [ ] Confidence filter, and rent filter where available
+- [x] Map with hex overlay
+- [x] Ranked table
+- [x] KPI tiles
+- [x] Layer toggles
+- [x] Confidence filter, and rent filter where available
 
 **6.2.5 Screen 4: Zone detail**
-- [ ] Overview tab
-- [ ] Score breakdown tab
-- [ ] Landmarks tab
-- [ ] Spending power tab
-- [ ] Competition tab
-- [ ] Rent and listings tab (when data exists)
-- [ ] Risks and checklist tab
+- [x] Overview tab
+- [x] Score breakdown tab
+- [x] Landmarks tab
+- [x] Spending power tab
+- [x] Competition tab
+- [x] Rent and listings tab (when data exists)
+- [x] Risks and checklist tab
 
 **6.2.6 Screen 5: Compare**
-- [ ] Side-by-side columns for 2–3 zones
+- [x] Side-by-side columns for 2–3 zones
 
 **6.2.7 Screen 6: What-if**
-- [ ] Tier, budget and size controls
-- [ ] Rank-change display
+- [x] Tier, budget and size controls
+- [x] Rank-change display
 
 **6.2.8 Screen 7: Chat**
-- [ ] Message input and history
-- [ ] Source links where available
+- [x] Message input and history
+- [x] Source links where available
 
 **6.2.9 Screen 8: Export**
 - [-] Export action (cut by the owner, 2026-09-20)
@@ -1178,24 +1178,24 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 6.3: Admin screens
 
 **6.3.1 Data and jobs**
-- [ ] City table
-- [ ] Ingestion jobs table
-- [ ] Freshness view
-- [ ] Ingest and refresh buttons
+- [x] City table
+- [x] Ingestion jobs table
+- [x] Freshness view
+- [x] Ingest and refresh buttons
 
 **6.3.2 Weights editor**
-- [ ] Editable weights with live sum check
-- [ ] Save as new version and set active
-- [ ] Show last back-test result
+- [x] Editable weights with live sum check
+- [x] Save as new version and set active
+- [x] Show last back-test result
 
 **6.3.3 System health**
-- [ ] Agent status, latency and error rate
-- [ ] Link to the Nasiko dashboard
+- [x] Agent status, latency and error rate
+- [x] Link to the Nasiko dashboard
 
 ### Part 6.4: Map
 
 **6.4.1 Library**
-- [ ] Choose folium or pydeck from the Phase-0 spike
+- [x] Choose folium or pydeck from the Phase-0 spike
 
 **6.4.2 Overlay**
 - [ ] Hex overlay coloured by score with legend
@@ -1209,12 +1209,12 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 6.5: Packaging and access
 
 **6.5.1 Container**
-- [ ] Streamlit Dockerfile
-- [ ] Compose service
+- [x] Streamlit Dockerfile
+- [x] Compose service
 
 **6.5.2 Network layout**
-- [ ] Only Streamlit exposed to the user
-- [ ] Backend and Nasiko gateway stay private
+- [x] Only Streamlit exposed to the user
+- [x] Backend and Nasiko gateway stay private
 
 **6.5.3 Optional tunnel** 🔒 G-DECIDE
 - [ ] Owner decides if remote access is needed (D-12)
