@@ -18,14 +18,14 @@
 |---|---|---|---|---|---|---|---|
 | 0 | Setup, verification and decisions | 6 | 34 | 108 | 64 | 59% | in progress |
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
-| 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
+| 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 24 | 52% | in progress |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 71 | 77% | in progress |
 | 4 | Backend API | 9 | 30 | 65 | 18 | 28% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
 | 6 | Streamlit app | 7 | 25 | 65 | 43 | 66% | in progress |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
 | 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **606** | **280** | **46%** | |
+| | **Total** | **65** | **229** | **606** | **304** | **50%** | |
 
 Decisions (32 total): 5 partly answered · 8 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
@@ -558,15 +558,15 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Owner supplies a CSV for the demo city, or confirms the MVP runs without one
 
 **2.1.3 Validation and cleaning**
-- [ ] Pydantic row model
-- [ ] Reject area under 50 or over 20,000 sq ft
-- [ ] Reject prices beyond 5 standard deviations of the locality median
-- [ ] Deduplicate
-- [ ] Tests
+- [x] Pydantic row model
+- [x] Reject area under 50 or over 20,000 sq ft
+- [x] Reject prices beyond 5 standard deviations of the locality median
+- [x] Deduplicate
+- [x] Tests
 
 **2.1.4 Importer CLI**
-- [ ] `--dry-run` that writes nothing
-- [ ] Report of accepted and rejected rows
+- [x] `--dry-run` that writes nothing
+- [x] Report of accepted and rejected rows
 
 **2.1.5 Persist listings** 🔒 G-DB
 - [ ] Upsert listings
@@ -576,37 +576,37 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 2.2: Geocoding and cell assignment
 
 **2.2.1 Geocoder client**
-- [ ] Owner confirms D-08 🔒
-- [ ] Client with cache
-- [ ] About 1 request per second
+- [x] Owner confirms D-08 🔒
+- [x] Client with cache
+- [x] About 1 request per second
 
 **2.2.2 Precision flag**
-- [ ] `exact` when coordinates exist
-- [ ] `locality` otherwise
+- [x] `exact` when coordinates exist
+- [x] `locality` otherwise
 
 **2.2.3 Cell assignment**
-- [ ] Compute H3 index for each listing
-- [ ] Report unassignable rows
+- [x] Compute H3 index for each listing
+- [x] Report unassignable rows
 
 ### Part 2.3: Rent and price estimation
 
 **2.3.1 Cell rent**
-- [ ] Use own listings when there are 3 or more
-- [ ] Otherwise inverse-distance-weighted k-ring average
-- [ ] Set `rent_is_estimated`
-- [ ] Tests
+- [x] Use own listings when there are 3 or more
+- [x] Otherwise inverse-distance-weighted k-ring average
+- [x] Set `rent_is_estimated`
+- [x] Tests
 
 **2.3.2 Locality price**
-- [ ] Aggregate residential price by locality
-- [ ] Assign to all cells in the locality
+- [x] Aggregate residential price by locality
+- [x] Assign to all cells in the locality
 
 **2.3.3 Coverage metrics**
-- [ ] `listing_coverage`
-- [ ] `price_coverage`
+- [x] `listing_coverage`
+- [x] `price_coverage`
 
 **2.3.4 No-data state**
-- [ ] Value stays null and is labelled missing
-- [ ] Test with an empty CSV
+- [x] Value stays null and is labelled missing
+- [x] Test with an empty CSV
 
 ### Part 2.4: Growth signals from OSM
 
