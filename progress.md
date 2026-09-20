@@ -5,6 +5,7 @@
 
 **How to read this file**
 - `- [ ]` not done · `- [x]` done · `- [~]` in progress · `- [!]` blocked (say why on the same line).
+- `- [-]` cut from the MVP by the owner; cut tasks are not counted in the totals.
 - 🔒 marks a micro-task that needs the owner's approval first (gates G-DB, G-EDIT, G-PUSH, G-COST, G-DECIDE, G-DEVIATE from `plan.md` §3).
 - Update this file in the same change as the work it describes.
 
@@ -19,14 +20,14 @@
 | 1 | Data foundation | 7 | 33 | 96 | 77 | 80% | in progress |
 | 2 | Optional rent data, growth signals and snapshot | 5 | 19 | 46 | 0 | 0% | not started |
 | 3 | Feature and scoring engine | 9 | 32 | 92 | 66 | 72% | in progress |
-| 4 | Backend API | 9 | 30 | 67 | 14 | 21% | in progress |
+| 4 | Backend API | 9 | 30 | 65 | 14 | 22% | in progress |
 | 5 | Agents on Nasiko | 8 | 25 | 62 | 7 | 11% | in progress |
-| 6 | Streamlit app | 7 | 25 | 67 | 0 | 0% | not started |
+| 6 | Streamlit app | 7 | 25 | 65 | 0 | 0% | not started |
 | 7 | Validation and tuning | 6 | 10 | 28 | 0 | 0% | not started |
-| 8 | Polish, hardening and demo | 8 | 21 | 52 | 0 | 0% | not started |
-| | **Total** | **65** | **229** | **618** | **225** | **36%** | |
+| 8 | Polish, hardening and demo | 8 | 21 | 44 | 0 | 0% | not started |
+| | **Total** | **65** | **229** | **606** | **225** | **37%** | |
 
-Decisions (31 total): 6 open · 5 partly answered · 9 proposed (awaiting your confirmation) · 8 answered · 2 deferred · 1 closed
+Decisions (31 total): 5 partly answered · 7 proposed (awaiting your confirmation) · 15 answered · 1 deferred · 3 closed
 <!-- SUMMARY-END -->
 
 Refresh the table above with `python scripts/update_progress_summary.py` (from the repo root) after a batch of ticks.
@@ -52,6 +53,8 @@ Refresh the table above with `python scripts/update_progress_summary.py` (from t
 | 8 | A | B | Agent runtime is ready: `agents/_shared/runner.py` (validate, run, envelope) and `a2a_glue.py`, plus `python -m scripts.deploy_agent <agent> --include agent_base=agents/_shared --include shared=shared` which packages `shared/` into an agent so your `shared/llm` client can be imported inside agents. Failure replies use an `error` object instead of `payload`; please mirror that in `AgentResponse` in `shared/contracts.py`. | open |
 | 9 | A | B | Git rule (found the hard way): we share ONE index, so at 13:03 my bare `git commit` tried to include your staged files and the lint hook failed on them. From now on both of us commit with an explicit path list: `git commit -m "[B] ..." -- path1 path2`. Your files are still staged and untouched. Before you commit, run `ruff check` and `ruff format --check` on them (the hook found lint errors in some of your staged files, for example `tests/shared/test_config.py`). | open |
 | 10 | A | B | For 3.8 (feature build) I propose this split: **you** provide one pure entry point, for example `scoring.build_cell_features(config, cells, catchments, attributes, ...) -> list[CellFeatures]`, doing the formulas and the city-wide percentile normalisation; **I** provide the inputs and the database I/O. Inputs I already have: `pipelines.catchments.iter_catchments(cells, pois, k=config.catchment_k, ...)` yields `(cell, list[POIRow with distance_m])` lazily, one cell at a time; `pipelines.city_dataset.build_dataset` gives cells, `CellAttributeRow` (land-use shares, main-road distance and class, locality, land use) and POIs. Because features are per (cell, category) and normalisation needs every cell, please make the entry point accept an iterator of cells but return the full list. Tell me if you prefer a different shape. | open |
+| 11 | A | B | Owner decisions that unblock you (details in the Decision Log): **D-22 approved**: implement the no-rent variants (affluence = 2/3 premium-POI density + 1/3 apartment share; drop F8 and rescale weights when there is no rent data; confidence = 2/3 POI coverage + 1/3 recency plus a visible note; rent filter only where rent data exists), and keep the original formulas for when a rent CSV exists. **D-19 answered**: no boosters are scored; provide day-part profile, age-skew proxy and medical density as explanatory info in the zone detail data, without changing the score or the weight tables (skip parking, late-night, seasonality). **D-23**: Streamlit has no login. **D-04**: the orchestrator lives in the backend (I will call the agents in order). | open |
+| 12 | A | B | More owner answers: **D-17**: please draft `config/brands_premium.yaml` per category (cafe, clothing, pharmacy) and tier (budget, mid, premium) for Bengaluru and put it in front of the owner for approval before it is used (also fix the placeholder that lists a pharmacy chain as premium). **Cuts**: PDF export is cut (skip 4.6.4 and the export screen 6.2.9) and Mumbai is cut. Growth signal (F9) and the compare-zones screen stay in. D-30 defaults are kept. | open |
 | 6 | A | B | Resolved: the owner says the two blank lines in `architecture-1.md` were their own accidental edit and asked to keep it, so B does not need to confirm anything. Still do not edit that file. One process note: when either of us runs `git commit`, pre-commit briefly stashes and restores the *other* agent's modified tracked files (a few seconds). Do not write files during a commit; if an edit fails around a commit, retry it. Stage only your own paths. | done |
 
 ---
@@ -63,35 +66,35 @@ Nothing is assumed. Status: `answered` (the owner decided), `proposed` (my sugge
 | ID | Question | Needed by | Status | Answer / date |
 |---|---|---|---|---|
 | D-01 | Hackathon rules: is pre-building allowed, is the theme fixed, what counts as "using" Nasiko? | 0.1.1 | partly answered | Owner, 2026-09-20: Nasiko is compulsory; Anakin and DronaHQ are not. Pre-building and theme still open. |
-| D-02 | Which city is the demo city (Pune is only an example in the architecture)? | 0.1.2 | partly answered | Owner, 2026-09-20: Bengaluru first; Mumbai only if time remains. Still to do: spot-check Bengaluru's OSM coverage and confirm. |
+| D-02 | Which city is the demo city (Pune is only an example in the architecture)? | 0.1.2 | answered | Owner, 2026-09-20: Bengaluru first; Mumbai is cut from the MVP (see the cuts below). Bengaluru's OSM coverage is confirmed by the full download and the data is loaded. |
 | D-03 | Which LLM route and models? | 0.1.4, 0.3.6 | partly answered | Owner, 2026-09-20: Ollama as primary if possible, OpenRouter free as backup. Owner then said any Antraa or fairsynth model was fine. Finding: every `Antraa-*` and `fairsynth-*` model carries an unrelated baked-in system prompt and dataset (8,177 prompt tokens per request, which fills the 8,192 context), so I chose the clean `qwen2.5:7b-instruct` instead (7.6B, tool support, 59 prompt tokens, valid JSON, 10.1 s including load), plus `nomic-embed-text` for embeddings. **Owner to confirm this substitution.** Set in Nasiko's `.env`: `OPENAI_MODEL`, `ROUTER_MODEL`, `EMBEDDING_MODEL`. Still open: whether Nasiko can really use Ollama (its LLM Router natively supports openai, anthropic, gemini and openrouter only; **verified 2026-09-20:** the route works when `OPENAI_API_BASE` (the router's setting) and `OPENAI_BASE_URL` (the routing engine's setting) both point at Ollama's OpenAI-compatible endpoint; a deployed agent answered through the proxy in 9.8 s and the routing engine dispatched in 6.8 s) and the OpenRouter backup model. Machine: 23.7 GB RAM, RTX 3050 6 GB. |
-| D-04 | Does the `orchestrator` live as a Nasiko agent or inside the backend? | 5.3.4 | open | |
+| D-04 | Does the `orchestrator` live as a Nasiko agent or inside the backend? | 5.3.4 | answered | Owner, 2026-09-20: the orchestrator lives inside the backend, which calls each Nasiko agent in turn. |
 | D-05 | Database | 1.1.1 | answered | Owner, 2026-09-20: PostgreSQL + PostGIS in Docker. The separate test database is approved later at 4.9.1. |
 | D-06 | Population source: WorldPop or Census ward data (both free)? | 1.5.3 | answered | Owner, 2026-09-20: use OSM residential-building density plus land-use shares for F3 now; `cell_attributes.population_est` stays NULL until a population source is added later (no schema change needed). |
 | D-07 | Competitor price level and popularity data | 3.4.1, 7.3.1 | proposed | Proposed: Google Places is dropped (paid). The Spearman correlation only runs if the owner supplies popularity data. |
 | D-08 | Which geocoder: Nominatim or Photon (only for CSV rows lacking coordinates)? | 2.2.1 | proposed | Proposed: Nominatim. |
 | D-09 | Routing engine for isochrones | 3.6.3 | deferred | Isochrones are proposed out of the MVP (see D-18). |
-| D-10 | PDF export approach | 4.6.4 | proposed | Proposed: WeasyPrint in the backend (DronaHQ add-on is gone). |
+| D-10 | PDF export approach | 4.6.4 | closed | Owner cut PDF export from the MVP on 2026-09-20; nothing to decide. |
 | D-11 | Interface replacing DronaHQ | 6.1 | answered | Owner, 2026-09-20: Streamlit. |
 | D-12 | Public access | 6.5.3 | proposed | Proposed: local only; a free Cloudflare Tunnel to Streamlit only if remote access is needed. |
 | D-13 | Which property portals are scraped? | none | closed | No scraping in the MVP (rent data comes from an optional CSV). |
 | D-14 | Build order for the categories. | 0.1.3 | partly answered | Owner, 2026-09-20: all three (cafe, clothing store, pharmacy) are in the MVP. Still open: which one is built end to end first (the architecture suggests one first, then the other two by configuration). |
 | D-15 | Repo root for the code, and whether to run `git init` in `D:\Projects\Nasiko_Buildathon`. | 0.6.1, 0.6.5 | answered | Owner, 2026-09-20: this folder is the repo root, with a local `git init` (no remote, nothing pushed). |
-| D-16 | The rules list skips numbers 5 and 6. Were two rules dropped? If so, what are they? | Phase 0 start | open | |
-| D-17 | Content of `brands_premium.yaml`: provided by the owner, or drafted for approval? | 1.2.3 | open | |
-| D-18 | Optional accuracy boosters in scope: parking (#9), late-night (#15), seasonality (#14), growth (#11)? Isochrones (#4) are proposed out. The architecture recommends 1, 2, 3, 5, 7, 8, 12, 13, 16, 17. | 3.6.3 | open | |
-| D-19 | Boosters #7 (day-part), #16 (age skew), #17 (medical density) are not among F1–F9. Do they modify an existing feature, become extra weighted features, or appear only as explanatory info? Any option changes the weight tables (G-DEVIATE). | 3.6.1 | open | |
+| D-16 | The rules list skips numbers 5 and 6. Were two rules dropped? If so, what are they? | Phase 0 start | closed | Owner, 2026-09-20: nothing was dropped; the rules list is complete as written (numbered 1, 2, 3, 4, 7, 8). |
+| D-17 | Content of `brands_premium.yaml`: provided by the owner, or drafted for approval? | 1.2.3 | partly answered | Owner, 2026-09-20: Agent B drafts brand lists per category and tier for Bengaluru, and the owner approves the file before it is used. Until then `config/brands_premium.yaml` is a 4-brand placeholder. |
+| D-18 | Optional accuracy boosters in scope: parking (#9), late-night (#15), seasonality (#14), growth (#11)? Isochrones (#4) are proposed out. The architecture recommends 1, 2, 3, 5, 7, 8, 12, 13, 16, 17. | 3.6.3 | answered | Owner, 2026-09-20: no optional boosters in the MVP (parking, late-night activity, seasonality and isochrones are out); the three in D-19 are shown as information only. |
+| D-19 | Boosters #7 (day-part), #16 (age skew), #17 (medical density) are not among F1–F9. Do they modify an existing feature, become extra weighted features, or appear only as explanatory info? Any option changes the weight tables (G-DEVIATE). | 3.6.1 | answered | Owner, 2026-09-20: "show three as info only": day-part profile, age-skew proxy and medical ecosystem density appear as explanatory facts in the zone detail and do not change the score, so the weight tables stay unchanged. |
 | D-20 | Rent and property-price data source | 2.1 | answered | Owner, 2026-09-20: OSM-only core plus an optional CSV the owner provides for the demo city. |
 | D-21 | Growth signal (F9) and `market-intel` without Anakin | 2.4, 5.2.3 | proposed | Proposed: OSM `construction` and `proposed` tags plus a curated notes file, summarised locally; no live web search. |
-| D-22 | Model adjustments when rent and price data are absent (G-DEVIATE): (a) affluence weights, since two of four terms depend on prices; (b) F8 rent efficiency fallback; (c) confidence weights for listing and price coverage; (d) how the rent hard filter behaves. | 1.2.2, 3.3.2, 3.4.4, 3.7.3 | deferred | Owner, 2026-09-20: "start with other building we will come back to this". Nothing here is approved or implemented; only the with-rent formulas are built until then. (Earlier the owner said "ok" to the note that these need changes, but no concrete formulas had been shown.) Proposal to review when we return: (a) affluence = ⅔ premium-POI density + ⅓ apartment share (the two price terms dropped, remaining weights rescaled 0.30:0.15); (b) drop F8 when no rent data exists and rescale the other weights to sum to 1.0; (c) confidence = ⅔ POI coverage + ⅓ recency, with a visible "rent data not available" note; (d) the rent budget is collected but the rent filter runs only where rent data exists. With a rent CSV, the original formulas apply. |
-| D-23 | Users and roles in the Streamlit MVP: none (single local user), or a simple password for admin pages? | 6.1.3 | open | |
+| D-22 | Model adjustments when rent and price data are absent (G-DEVIATE): (a) affluence weights, since two of four terms depend on prices; (b) F8 rent efficiency fallback; (c) confidence weights for listing and price coverage; (d) how the rent hard filter behaves. | 1.2.2, 3.3.2, 3.4.4, 3.7.3 | answered | Owner, 2026-09-20: asked whether Anakin could supply rent data, said it is optional, credits are limited, and to decide myself: "if it is not a hassle, easy and fast, finish and integrate, or move on with your proposal as I have a very tight deadline". **Decision: Anakin is NOT integrated now** (needs a key, a terms-of-service review of the property portals, and a full extract, geocode and clean pipeline; about 300 free credits could cover only a few dozen pages against 1,000+ Bengaluru localities). **My proposal is adopted:** (a) affluence = 2/3 premium-POI density + 1/3 apartment share when there is no price data; (b) F8 is dropped when there is no rent data and the other weights are rescaled to sum to 1.0; (c) confidence = 2/3 POI coverage + 1/3 recency with a visible "rent data not available" note; (d) the rent filter runs only where rent data exists. With a rent CSV (from any source, including Anakin later) the original architecture formulas apply. |
+| D-23 | Users and roles in the Streamlit MVP: none (single local user), or a simple password for admin pages? | 6.1.3 | answered | Owner, 2026-09-20: one local user, no login; admin pages are not password protected (local demo only). |
 | D-24 | Schema and repo-layout simplifications (G-DEVIATE): rename or drop the Anakin-specific parts of `scrape_jobs`; use `frontend/streamlit_app/` instead of `dronahq/` and `frontend/map_embed/`. | 0.6.1, 1.1.3 | answered | Owner, 2026-09-20: approved the folder layout with a new top-level `shared/` package (streamlit follows from D-11), and the schema deviations D1–D5 together with migration 0001 (`ingest_jobs` instead of `scrape_jobs`, new `cell_attributes`, `cell_features.category`, `cities.key`, CHECK constraints). |
 | D-25 | Adapt §9.3, §13 and parts of §14 and §19 to the installed Nasiko (A2A v1.0 agents, port 8080, LLM Router, routing engine). `architecture-1.md` itself is not edited. | Phase 5 | proposed | Forced by the read-only review in `plan.md` §2.4. |
 | D-26 | Nasiko keys and CLI: which keys go in (free providers only), who edits (G-EDIT); create `D:\Projects\Nasiko\.env` from `.env.example` (the installed version does not read the old `.nasiko-local.env`); whether to install Rust 1.85+ to build the `nasiko` CLI, or use the dashboard. | 0.3.2, 0.3.4 | partly answered | Owner, 2026-09-20: "create it yourself" (done: `.env` created), "dashboard is fine for now" (CLI stays optional). Still open: a real free OpenRouter key (the old file only held a placeholder), and Rust only if the CLI is wanted later. |
 | D-27 | Python version for our code | 0.2.2 | answered | Owner, 2026-09-20: whichever is quick to use, so the installed 3.11.9 is used (no install). `uv` is optional. |
 | D-28 | Tier labels: the owner asked for "niche, medium class and lower class". Proposed mapping to the architecture's ids: lower class → `budget`, medium class → `mid`, niche → `premium`. Does "niche" mean the premium/specialty end? | 1.2.2, 6.2.2 | answered | Owner, 2026-09-20: yes, niche means premium. Mapping: lower class → `budget`, medium class → `mid`, niche → `premium`. |
 | D-29 | Bengaluru is large (roughly 700 km², about 7,000 cells). Start with tiled Overpass requests and fall back to a free Karnataka extract from Geofabrik if the public server is too slow? | 1.4.1 | proposed | Evidence from the 2026-09-20 check: counting features over a Bengaluru bounding box took 22 to 32 s per heavy tag, and three quick follow-up queries were rejected with HTTP 429. Tiling with slow pacing, or the extract, will be needed. Update: tiled, paced downloading with automatic tile splitting is built and running; the extract has not been needed so far. |
-| D-30 | Implementation choices I made for cell attributes; please review (all are easy to change): (a) a cell's `land_use` comes from land-use polygon shares (at least 0.25) or POI counts (at least 3 commercial POIs, or at least 3 residential buildings); both give `mixed`, neither gives `other`; (b) locality names come from the nearest OSM place point (suburb, neighbourhood, quarter) within 3 km, because most Bengaluru localities are mapped as points rather than polygons; (c) POIs just outside the boundary but inside the 1.5 km fetch buffer are kept with `h3_index` NULL, so edge cells still see nearby landmarks. | 1.3.3, 1.5.1 | proposed | |
+| D-30 | Implementation choices I made for cell attributes; please review (all are easy to change): (a) a cell's `land_use` comes from land-use polygon shares (at least 0.25) or POI counts (at least 3 commercial POIs, or at least 3 residential buildings); both give `mixed`, neither gives `other`; (b) locality names come from the nearest OSM place point (suburb, neighbourhood, quarter) within 3 km, because most Bengaluru localities are mapped as points rather than polygons; (c) POIs just outside the boundary but inside the 1.5 km fetch buffer are kept with `h3_index` NULL, so edge cells still see nearby landmarks. | 1.3.3, 1.5.1 | answered | Owner, 2026-09-20: keep the defaults (land share of at least 25% or 3+ commercial POIs or residential buildings; localities from the nearest place point within 3 km). |
 | D-31 | How the backend logs in to Nasiko: the client uses a username and password. Proposed: a dedicated service user with the least rights Nasiko allows, instead of the admin account whose password is in Nasiko's `.env`. For local development the admin login is used. | 5.6.1 | proposed | |
 
 ---
@@ -127,6 +130,14 @@ Record every approval the owner gives for gated actions.
 | 2026-09-20 | G-DECIDE | Use OSM residential-building density plus land-use shares for F3 now; population stays NULL until later | D-06 |
 | 2026-09-20 | G-DECIDE | Keep the two leading blank lines in `architecture-1.md`: the owner made that edit by mistake and asked to keep it; committed as the owner's own change | rule 1 |
 | 2026-09-20 | G-DB | Load the Bengaluru dataset (1 city, 6,631 cells, 6,631 cell attributes, 41,469 POIs, 1 ingest job) in one transaction (owner: "Approve the load") | 1.3.1, 1.3.4, 1.4.5 |
+| 2026-09-20 | G-DEVIATE | Adopt the no-rent-data formulas (D-22) as proposed; Anakin not integrated (decision delegated to Agent A: "take the decision") | D-22 |
+| 2026-09-20 | G-DECIDE | Boosters: none scored; day-part, age skew and medical density shown as information only | D-18, D-19 |
+| 2026-09-20 | G-DECIDE | Orchestrator inside the backend | D-04 |
+| 2026-09-20 | G-DECIDE | Streamlit: one local user, no login | D-23 |
+| 2026-09-20 | G-DECIDE | Cut from the MVP: PDF export and Mumbai. Kept: growth signal (F9) and the compare-zones screen | plan §6 |
+| 2026-09-20 | G-DECIDE | Keep the land-use and locality defaults | D-30 |
+| 2026-09-20 | G-DECIDE | Rules 5 and 6: nothing was dropped | D-16 |
+| 2026-09-20 | G-DECIDE | Brand list: Agent B drafts, owner approves before use | D-17 |
 
 ## 4. Database change log (G-DB)
 
@@ -905,8 +916,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Stub until Phase 5 integration
 
 **4.6.4 Report PDF** 🔒 G-DECIDE
-- [ ] Owner confirms D-10
-- [ ] `GET /analyses/{id}/report.pdf` with WeasyPrint
+- [-] Owner confirms D-10 (cut by the owner, 2026-09-20)
+- [-] `GET /analyses/{id}/report.pdf` with WeasyPrint (cut by the owner, 2026-09-20)
 
 ### Part 4.7: Admin endpoints
 
@@ -1159,8 +1170,8 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Source links where available
 
 **6.2.9 Screen 8: Export**
-- [ ] Export action
-- [ ] PDF content check
+- [-] Export action (cut by the owner, 2026-09-20)
+- [-] PDF content check (cut by the owner, 2026-09-20)
 
 ### Part 6.3: Admin screens
 
@@ -1306,7 +1317,7 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Compare works for all categories
 - [ ] What-if works for all categories
 - [ ] Chat works for all categories
-- [ ] PDF works for all categories
+- [-] PDF works for all categories (cut by the owner, 2026-09-20)
 
 **8.1.2 Success criteria**
 - [ ] Result in under 30 seconds
@@ -1390,17 +1401,17 @@ Every database action, with the approval reference. **No entries means the datab
 ### Part 8.7: Stretch: Mumbai (only if time remains)
 
 **8.7.1 Go decision** 🔒
-- [ ] Owner confirms time remains and Mumbai goes ahead
+- [-] Owner confirms time remains and Mumbai goes ahead (cut by the owner, 2026-09-20)
 
 **8.7.2 Ingest Mumbai**
-- [ ] Run the same ingestion pipeline for Mumbai (configuration only, no code change)
-- [ ] Tiled Overpass fetch and QA report
-- [ ] Snapshot exported
+- [-] Run the same ingestion pipeline for Mumbai (configuration only, no code change) (cut by the owner, 2026-09-20)
+- [-] Tiled Overpass fetch and QA report (cut by the owner, 2026-09-20)
+- [-] Snapshot exported (cut by the owner, 2026-09-20)
 
 **8.7.3 Enable and test**
-- [ ] Owner supplies Mumbai back-test cases 🔒
-- [ ] City enabled in the wizard
-- [ ] Scores checked for all three categories
+- [-] Owner supplies Mumbai back-test cases 🔒 (cut by the owner, 2026-09-20)
+- [-] City enabled in the wizard (cut by the owner, 2026-09-20)
+- [-] Scores checked for all three categories (cut by the owner, 2026-09-20)
 
 ### Part 8.8: Sign-off
 

@@ -578,6 +578,8 @@ Phases 2 and 3 can overlap once Phase 1 finishes: scoring can be built against O
 
 If time is short, in this order: growth momentum (F9), compare screen, PDF; keep one category polished and configure the other two with weights only. Isochrones are already outside the MVP.
 
+**Applied on 2026-09-20 by the owner:** PDF export (4.6.4 and the export screen 6.2.9) and Mumbai (Part 8.7) are cut from the MVP. The growth signal (F9) and the compare-zones screen stay in. Cut items are marked `[-]` in `progress.md` and excluded from its totals.
+
 ## 7. Out of scope for this build
 
 Anakin and DronaHQ integrations (may return later as optional, pluggable extras), Google Places, isochrones, live web search, and the roadmap in §25 (more categories, multi-city, real footfall data, outcome feedback loop, WhatsApp, voice assistant, wholesaler comparison, monetisation), plus the non-goals in §1.5.
