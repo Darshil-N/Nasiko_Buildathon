@@ -1256,15 +1256,15 @@ Every database action, with the approval reference. **No entries means the datab
 - [ ] Owner supplies the expected order
 
 **7.1.2 Store cases**
-- [ ] Cases in `data/backtest/`
-- [ ] Format documented
+- [x] Cases in `data/backtest/`
+- [x] Format documented
 
 ### Part 7.2: Back-test run
 
 **7.2.1 Script**
-- [ ] `scripts/backtest.py`
-- [ ] Top-3 hit rate
-- [ ] Pass or fail per case
+- [x] `scripts/backtest.py`
+- [x] Top-3 hit rate
+- [x] Pass or fail per case
 
 **7.2.2 All categories**
 - [ ] Clothing: markets above residential
